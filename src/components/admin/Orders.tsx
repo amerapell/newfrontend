@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABEL, apiMessage, longDate, naira } from "@/lib/format";
 import type { AdminOrderDetail, OrderStatus } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
 import { Logo } from "@/components/brand/Logo";
+import { customerHref } from "./Customers";
 
 const STATUSES = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
 
@@ -129,7 +130,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
             <div><dt className="mono-xs">Source · UTM</dt><dd>{[o.utm.source ?? "direct", o.utm.medium, o.utm.campaign].filter(Boolean).join(" / ")}</dd></div>
             {o.discountCode && <div><dt className="mono-xs">Promo</dt><dd className="mono">{o.discountCode}</dd></div>}
             <div><dt className="mono-xs">Customer</dt><dd>{o.userId ? "Account holder" : "Guest checkout"} · {o.marketingConsent ? "opted in to marketing" : "no marketing consent"}</dd></div>
-            <div><dt className="mono-xs">Contact</dt><dd>{o.email}<br />{o.phone}</dd></div>
+            <div><dt className="mono-xs">Contact</dt><dd><Link href={customerHref(o.email)} className="ap-link">{o.email}</Link><br />{o.phone}</dd></div>
             <div>
               <dt className="mono-xs">Delivery · {o.delivery.name}</dt>
               <dd>

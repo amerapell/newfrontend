@@ -3,7 +3,7 @@ import { HeroPanel, type HeroPanelData } from "@/components/home/HeroPanel";
 import { ServiceCards, StoryPanel } from "@/components/home/HomeSections";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { catalogApi, safe } from "@/lib/api";
-import { dropPhase } from "@/lib/drop";
+import { dropPhase, dropTitle } from "@/lib/drop";
 import { SITE_URL } from "@/lib/env";
 import { homePanels } from "@/lib/nav";
 import { getCollections, getSettings } from "@/lib/server-data";
@@ -24,7 +24,7 @@ function toPanel(c: Collection, settings: StoreSettings): HeroPanelData {
     const label = c.name.split(/\s+[—/]\s+/)[0];
     return {
       key: c.slug,
-      title: `${label} — ${settings.drop.title}`,
+      title: `${label} — ${dropTitle(label, settings.drop.title)}`,
       linkLabel: c.tagline || "Discover the drop",
       href: `/drop/${c.slug}`,
       image: c.heroImageUrl ?? null,

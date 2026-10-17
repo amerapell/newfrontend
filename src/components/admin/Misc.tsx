@@ -27,6 +27,12 @@ function useMutate() {
 
 const koboIn = (v: string) => (v ? Math.round(Number(v.replace(/[^\d.]/g, "")) * 100) : 0);
 const nairaIn = (k: number | null | undefined) => (k ? String(k / 100) : "");
+/** ISO instant → `<input type="datetime-local">` value in the admin's own time zone (the input is local time). */
+const localInput = (iso: string | null | undefined) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
 
 /* ---------------- Exchanges ---------------- */
 
@@ -190,7 +196,7 @@ export function CollectionsAdmin() {
               }}
             />
             <FieldBox label="Hero link label · default “Discover the collection”" value={editing.tagline ?? ""} maxLength={80} onChange={(e) => setEditing({ ...editing, tagline: e.target.value })} />
-            <FieldBox label="Go live at · drops" type="datetime-local" value={editing.goLiveAt ? editing.goLiveAt.slice(0, 16) : ""} onChange={(e) => setEditing({ ...editing, goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+            <FieldBox label="Go live at · drops" type="datetime-local" value={localInput(editing.goLiveAt)} onChange={(e) => setEditing({ ...editing, goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
             <TextAreaBox full label="Description" rows={2} value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
           </div>
           <HeroImageField value={editing.heroImageUrl} onChange={(url) => setEditing({ ...editing, heroImageUrl: url })} />
@@ -227,17 +233,36 @@ export function DiscountsAdmin() {
   const mutate = useMutate();
   const blank = { code: "", type: "PERCENT" as DiscountType, value: 10, maxUses: null, minSubtotalKobo: null, startsAt: null, endsAt: null };
   const [d, setD] = useState<Omit<Discount, "id">>(blank);
+  // PATCH /admin/discounts/:id — the same form edits an existing code.
+  const [editing, setEditing] = useState<string | null>(null);
+  const startEdit = (x: Discount) => {
+    setEditing(x.id);
+    setD({ code: x.code, type: x.type, value: x.value, maxUses: x.maxUses ?? null, minSubtotalKobo: x.minSubtotalKobo ?? null, startsAt: x.startsAt ?? null, endsAt: x.endsAt ?? null });
+  };
+  const cancelEdit = () => {
+    setEditing(null);
+    setD(blank);
+  };
   return (
     <>
       <AdminHead index="Discounts" title={<>Promo <em>codes</em></>} />
       <section className="admin-card">
-        <div className="mono-label admin-card__head">New code</div>
+        <div className="mono-label admin-card__head">{editing ? `Edit ${d.code || "code"}` : "New code"}</div>
         <form
           className="field-grid field-grid--200"
           onSubmit={async (e) => {
             e.preventDefault();
             if (!d.code.trim()) return;
-            const r = await mutate(() => adminApi.createDiscount({ ...d, code: d.code.trim().toUpperCase() }), "Code created.");
+            const body = { ...d, code: d.code.trim().toUpperCase() };
+            if (editing) {
+              const r = await mutate(() => adminApi.updateDiscount(editing, body), "Code updated.");
+              if (r && data) {
+                setData(data.map((x) => (x.id === r.id ? r : x)));
+                cancelEdit();
+              }
+              return;
+            }
+            const r = await mutate(() => adminApi.createDiscount(body), "Code created.");
             if (r && data) {
               setData([...data, r]);
               setD(blank);
@@ -257,7 +282,10 @@ export function DiscountsAdmin() {
           <FieldBox label="Max uses · optional" inputMode="numeric" value={d.maxUses ? String(d.maxUses) : ""} onChange={(e) => setD({ ...d, maxUses: Number(e.target.value.replace(/\D/g, "")) || null })} />
           <FieldBox label="Starts" type="date" value={d.startsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
           <FieldBox label="Ends" type="date" value={d.endsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-          <div className="field-wrap"><button className="btn btn--short">Create code</button></div>
+          <div className="field-wrap row gap-12">
+            <button className="btn btn--short">{editing ? "Save code" : "Create code"}</button>
+            {editing && <button type="button" className="ap-link small-link" onClick={cancelEdit}>Cancel</button>}
+          </div>
         </form>
       </section>
       <table className="admin-table">
@@ -271,7 +299,12 @@ export function DiscountsAdmin() {
               <td className="num tnum">{x.minSubtotalKobo ? naira(x.minSubtotalKobo) : "—"}</td>
               <td className="num tnum">{x.uses ?? 0}{x.maxUses ? ` / ${x.maxUses}` : ""}</td>
               <td className="mono-xs">{x.startsAt ? longDate(x.startsAt) : "Now"} → {x.endsAt ? longDate(x.endsAt) : "∞"}</td>
-              <td className="num"><button className="ap-link small-link muted" onClick={async () => { if ((await mutate(() => adminApi.deleteDiscount(x.id), "Deleted.")) !== null) setData(data.filter((y) => y.id !== x.id)); }}>Delete</button></td>
+              <td className="num">
+                <div className="row gap-12">
+                  <button className="ap-link small-link" onClick={() => startEdit(x)}>Edit</button>
+                  <button className="ap-link small-link muted" onClick={async () => { if ((await mutate(() => adminApi.deleteDiscount(x.id), "Deleted.")) !== null) { setData(data.filter((y) => y.id !== x.id)); if (editing === x.id) cancelEdit(); } }}>Delete</button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -299,7 +332,7 @@ export function ZonesAdmin() {
               <tr key={z.id}>
                 <td className="mono-xs">{z.code}</td>
                 <td><input className="admin-input" value={d.name} onChange={(e) => upd({ name: e.target.value })} aria-label={`${z.code} name`} /></td>
-                <td><input className="admin-input" value={d.etaText} onChange={(e) => upd({ etaText: e.target.value.toUpperCase() })} aria-label={`${z.code} ETA`} /></td>
+                <td><input className="admin-input" value={d.etaText} onChange={(e) => upd({ etaText: e.target.value })} aria-label={`${z.code} ETA`} /></td>
                 <td className="num"><input className="admin-input admin-input--num" inputMode="numeric" value={nairaIn(d.feeKobo) || "0"} onChange={(e) => upd({ feeKobo: koboIn(e.target.value) })} aria-label={`${z.code} fee`} /></td>
                 <td><input type="checkbox" checked={d.active} onChange={(e) => upd({ active: e.target.checked })} aria-label={`${z.code} active`} /></td>
                 <td className="num">
@@ -414,7 +447,7 @@ export function SettingsAdmin() {
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Ticker · one message per line</div>
-          <TextAreaBox label="Ticker text" rows={5} value={s.tickerText.join("\n")} onChange={(e) => set("tickerText", e.target.value.split("\n").map((x) => x.toUpperCase()))} />
+          <TextAreaBox label="Ticker text" rows={5} value={s.tickerText.join("\n")} onChange={(e) => set("tickerText", e.target.value.split("\n"))} />
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Drop / banner</div>
@@ -423,7 +456,7 @@ export function SettingsAdmin() {
             <div className="field-grid field-grid--200">
               <FieldBox label="Title · e.g. The Night Edit" value={drop.title} onChange={(e) => setDrop({ title: e.target.value })} />
               <FieldBox label="Collection slug" value={drop.collectionSlug} onChange={(e) => setDrop({ collectionSlug: slugify(e.target.value) })} />
-              <FieldBox label="Goes live" type="datetime-local" value={drop.goLiveAt ? drop.goLiveAt.slice(0, 16) : ""} onChange={(e) => setDrop({ goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+              <FieldBox label="Goes live" type="datetime-local" value={localInput(drop.goLiveAt)} onChange={(e) => setDrop({ goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
               <FieldBox label="First run · total" inputMode="numeric" value={String(drop.firstRunTotal)} onChange={(e) => setDrop({ firstRunTotal: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
               <FieldBox label="First run · left" inputMode="numeric" value={String(drop.firstRunLeft)} onChange={(e) => setDrop({ firstRunLeft: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
             </div>

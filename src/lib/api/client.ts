@@ -47,6 +47,8 @@ let refreshHandler: (() => Promise<string | null>) | null = null;
 
 const CART_KEY = "ap_cart_token";
 const ADMIN_KEY = "ap_admin_token";
+/** Not a credential: "1" after a sign-in on this device, "0" after sign-out / a failed refresh. */
+const SESSION_KEY = "ap_session";
 
 export const tokens = {
   setAccess(t: string | null) {
@@ -71,6 +73,26 @@ export const tokens = {
     try {
       if (t) window.localStorage.setItem(CART_KEY, t);
       else window.localStorage.removeItem(CART_KEY);
+    } catch {
+      /* private mode */
+    }
+  },
+  /**
+   * Whether this browser may hold a refresh cookie (`ap_rt` is httpOnly, so it can't be read directly).
+   * Unknown (never recorded) counts as maybe, so sessions that predate the hint are still restored once.
+   */
+  maybeSignedIn(): boolean {
+    if (!isBrowser) return false;
+    try {
+      return window.localStorage.getItem(SESSION_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  },
+  setSignedIn(on: boolean) {
+    if (!isBrowser) return;
+    try {
+      window.localStorage.setItem(SESSION_KEY, on ? "1" : "0");
     } catch {
       /* private mode */
     }

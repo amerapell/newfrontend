@@ -1,6 +1,9 @@
 import { api } from "./client";
 import type {
   AdminCollection,
+  AdminCustomer,
+  AdminCustomerDetail,
+  AdminCustomerSort,
   AdminDashboard,
   AdminExchange,
   AdminExchangeDetail,
@@ -23,6 +26,9 @@ import type {
 
 const a = { auth: "admin" as const };
 
+/** POST /admin/stock/import → one entry per rejected CSV row. */
+export type StockImportResult = { updated: number; errors: { line: number; sku: string | null; message: string }[] };
+
 export const adminApi = {
   login: (email: string, password: string) => api.post<AdminLoginResponse>("admin/auth/login", { email, password }),
   totp: (tempToken: string, code: string) => api.post<{ accessToken: string }>("admin/auth/totp", { tempToken, code }),
@@ -41,7 +47,7 @@ export const adminApi = {
   importStock: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return api.post<{ updated: number; errors: string[] }>("admin/stock/import", fd, { ...a, direct: true });
+    return api.post<StockImportResult>("admin/stock/import", fd, { ...a, direct: true });
   },
 
   collections: () => api.get<AdminCollection[]>("admin/collections", a),
@@ -51,6 +57,8 @@ export const adminApi = {
   deleteCollection: (id: string) => api.del<unknown>(`admin/collections/${id}`, a),
 
   orders: (q?: { status?: string; provider?: string; q?: string; page?: number }) => api.get<Paginated<AdminOrder>>("admin/orders", { ...a, query: q }),
+  customers: (q?: { q?: string; sort?: AdminCustomerSort; page?: number }) => api.get<Paginated<AdminCustomer>>("admin/customers", { ...a, query: q }),
+  customer: (email: string) => api.get<AdminCustomerDetail>(`admin/customers/${encodeURIComponent(email)}`, a),
   order: (id: string) => api.get<AdminOrderDetail>(`admin/orders/${id}`, a),
   updateOrder: (id: string, b: { status?: OrderStatus; note?: string }) => api.patch<AdminOrderDetail>(`admin/orders/${id}`, b, a),
   packingSlip: (id: string) => api.get<string>(`admin/orders/${id}/packing-slip`, { ...a, text: true }),

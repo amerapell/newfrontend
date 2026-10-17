@@ -15,10 +15,11 @@ import { useNgStates } from "@/lib/useNgStates";
 import type { Address, Order } from "@/lib/types";
 import { useAccount } from "./AccountShell";
 import { CreditLocked } from "./EmailVerification";
+import { EXCHANGEABLE_STATUSES } from "./ExchangeRequest";
 import { OrderItems, OrderMeta, OrderTotals, Progress } from "./OrderParts";
 
 export function canExchange(o: Order) {
-  return o.status === "DELIVERED" && !!o.exchangeableUntil && new Date(o.exchangeableUntil).getTime() > Date.now() && o.items.some((i) => i.exchangeable);
+  return EXCHANGEABLE_STATUSES.includes(o.status) && !!o.exchangeableUntil && new Date(o.exchangeableUntil).getTime() > Date.now() && o.items.some((i) => i.exchangeable);
 }
 
 const pieces = (o: Order) => o.items.reduce((s, i) => s + i.quantity, 0);

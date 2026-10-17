@@ -1,6 +1,5 @@
-import Image from "next/image";
 import type { CSSProperties } from "react";
-import { canOptimise } from "@/components/ui/Photo";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { ICON_PATHS, iconKind, type IconKind } from "@/lib/product";
 import type { ProductCard } from "@/lib/types";
 
@@ -44,7 +43,7 @@ export function ProductImage({
   if (!src) return <ImagePlaceholder kind={kind} size={iconSize} className={className} style={style} />;
   return (
     <div className={`img-fill ${className}`} style={style}>
-      <Image src={src} alt={alt} fill sizes={sizes} priority={priority} unoptimized={!canOptimise(src)} style={{ objectFit: fit }} />
+      <SmartImage src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: fit }} />
     </div>
   );
 }

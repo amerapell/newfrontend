@@ -784,11 +784,11 @@ export async function mockRoute(req: MockRequest): Promise<unknown> {
       const file = req.body instanceof FormData ? req.body.get("file") : null;
       const text = file instanceof Blob ? await file.text() : "";
       let updated = 0;
-      const errors: string[] = [];
+      const errors: { line: number; sku: string | null; message: string }[] = [];
       text.split(/\r?\n/).slice(1).filter(Boolean).forEach((line, i) => {
         const [sku, , , , stock] = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
         const v = d.products.flatMap((p) => p.variants).find((x) => x.sku === sku);
-        if (!v || isNaN(Number(stock))) errors.push(`Row ${i + 2}: unknown SKU or bad stock`);
+        if (!v || isNaN(Number(stock))) errors.push({ line: i + 2, sku: sku || null, message: v ? `Invalid stock "${stock}"` : "Unknown SKU" });
         else { v.stock = Number(stock); v.available = Number(stock); updated++; }
       });
       return done({ updated, errors });

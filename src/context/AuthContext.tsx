@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { accountApi, authApi, tokens } from "@/lib/api";
+import { accountApi, ApiError, authApi, tokens } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 type Status = "loading" | "authed" | "guest";
@@ -33,9 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .refresh()
         .then((r) => {
           tokens.setAccess(r.accessToken);
+          tokens.setSignedIn(true);
           return r.accessToken;
         })
-        .catch(() => {
+        .catch((e) => {
+          // Only a definite "no session" answer clears the hint; a network blip must not sign the shopper out.
+          if (e instanceof ApiError && e.status === 401) tokens.setSignedIn(false);
           tokens.setAccess(null);
           setUser(null);
           setStatus("guest");
@@ -52,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokens.onRefresh(refresh);
     let alive = true;
     (async () => {
+      // Guests who never signed in on this device skip POST /auth/refresh (it can only answer 401).
+      if (!tokens.maybeSignedIn()) return setStatus("guest");
       const t = await refresh();
       if (!alive) return;
       if (!t) return setStatus("guest");
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const r = await authApi.login(email, password);
     tokens.setAccess(r.accessToken);
+    tokens.setSignedIn(true);
     setUser(r.user);
     setStatus("authed");
     return r.user;
@@ -81,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = useCallback(async (credential: string) => {
     const r = await authApi.google(credential);
     tokens.setAccess(r.accessToken);
+    tokens.setSignedIn(true);
     setUser(r.user);
     setStatus("authed");
     return r.user;
@@ -89,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback<AuthValue["register"]>(async (b) => {
     const r = await authApi.register(b);
     tokens.setAccess(r.accessToken);
+    tokens.setSignedIn(true);
     setUser(r.user);
     setStatus("authed");
     return r.user;
@@ -101,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
     tokens.setAccess(null);
+    tokens.setSignedIn(false);
     tokens.setCart(null);
     setUser(null);
     setStatus("guest");

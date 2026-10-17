@@ -13,3 +13,13 @@ export function dropPhase(drop: DropSettings | null, now = Date.now()): { phase:
   if (close > now) return { phase: "live", target: close };
   return { phase: "ended", target: null };
 }
+
+/**
+ * The drop's own name ("The Night Edit") from settings.drop.title, without a repeated collection label —
+ * admins sometimes enter the full "Drop 04 — The Night Edit", which would otherwise read "Drop 04 — Drop 04 — …".
+ */
+export function dropTitle(label: string, title: string): string {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const stripped = title.replace(new RegExp(`^${escaped}\\s*[—/:–-]\\s*`, "i"), "").trim();
+  return stripped || title;
+}

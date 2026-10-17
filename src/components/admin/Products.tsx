@@ -64,7 +64,8 @@ export function ProductsList() {
                   if (!f) return;
                   try {
                     const r = await adminApi.importStock(f);
-                    setImportMsg(`Updated ${r.updated} variants.${r.errors.length ? ` ${r.errors.length} problem rows: ${r.errors.slice(0, 3).join("; ")}` : ""}`);
+                    const problems = r.errors.slice(0, 3).map((x) => `line ${x.line}${x.sku ? ` (${x.sku})` : ""}: ${x.message}`);
+                    setImportMsg(`Updated ${r.updated} variants.${r.errors.length ? ` ${r.errors.length} problem ${r.errors.length === 1 ? "row" : "rows"} — ${problems.join("; ")}${r.errors.length > 3 ? "; …" : ""}` : ""}`);
                     void reload();
                   } catch (x) {
                     setImportMsg(apiMessage(x));
@@ -78,7 +79,7 @@ export function ProductsList() {
           </>
         }
       />
-      {importMsg && <div className="notice">{importMsg} <span className="mono-xs">CSV COLUMNS: sku,product,colour,size,stock</span></div>}
+      {importMsg && <div className="notice">{importMsg} <span className="mono-xs">CSV columns: sku, product, colour, size, stock</span></div>}
       <div className="admin-filters">
         <input className="admin-input" placeholder="Search name or number" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search products" />
         <select className="admin-input" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">

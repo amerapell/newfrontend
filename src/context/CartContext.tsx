@@ -57,7 +57,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return c;
   }, [accept]);
 
+  // Read inside `load` so callers (e.g. the order-complete page) can't fetch the cart before the session is
+  // restored — a guest-token request for a cart that now belongs to the account answers 404 and drops the token.
+  const authStatus = useRef(status);
+  authStatus.current = status;
+
   const load = useCallback(async () => {
+    if (authStatus.current === "loading") return; // the effect below loads once auth settles
     try {
       if (!tokens.getCart() && !tokens.getAccess()) {
         setCart(null);

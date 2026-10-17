@@ -8,9 +8,11 @@ import { useSettings } from "@/context/SettingsContext";
 import { exchangesApi } from "@/lib/api";
 import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, shortDay } from "@/lib/format";
 import { iconKind } from "@/lib/product";
-import type { Exchange, ExchangeStatus, Order } from "@/lib/types";
+import type { Exchange, ExchangeStatus, Order, OrderStatus } from "@/lib/types";
 
 const REASONS = ["Wrong size", "Changed my mind", "Not as pictured", "Other"];
+/** Same as the API (exchanges.service EXCHANGEABLE_ORDER_STATUSES): another piece of the order can still be sent back. */
+export const EXCHANGEABLE_STATUSES: OrderStatus[] = ["DELIVERED", "EXCHANGE_REQUESTED", "EXCHANGED"];
 
 export const EXCHANGE_STEPS = [
   { label: "Requested", desc: "We have your request" },
@@ -55,16 +57,19 @@ export function ExchangeRequestForm({
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Reset only when the customer switches order. The account reloads its orders after a request (the order
+  // becomes EXCHANGE_REQUESTED, with new item objects) — that must not wipe the "Request sent" confirmation.
+  const firstExchangeable = order.items.find((i) => i.exchangeable)?.id;
   useEffect(() => {
-    const ok = order.items.find((i) => i.exchangeable)?.id;
-    setPicked(new Set(ok ? [ok] : []));
+    setPicked(new Set(firstExchangeable ? [firstExchangeable] : []));
     setSent(null);
     setErr(null);
     setPhotos([]);
-  }, [order.number, order.items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.number]);
 
   const until = order.exchangeableUntil ? new Date(order.exchangeableUntil) : null;
-  const windowOpen = !!until && until.getTime() > Date.now() && order.status === "DELIVERED";
+  const windowOpen = !!until && until.getTime() > Date.now() && EXCHANGEABLE_STATUSES.includes(order.status);
   const value = useMemo(() => order.items.filter((i) => picked.has(i.id)).reduce((s, i) => s + i.unitKobo * i.quantity, 0), [order.items, picked]);
 
   const toggle = (id: string) => {
@@ -223,7 +228,14 @@ export function ExchangeRequestForm({
       <div className="exchange__submit">
         <span className="muted">
           Return it to the store or book a pickup. Credit is added when we receive it.
-          {value > 0 && !sent && <> Value: <span className="tnum ink">{naira(value)}</span>.</>}
+          {value > 0 && !sent && (
+            // Credit is what was actually paid for the piece (the API's paidUnitKobo), so a promo lowers it.
+            order.discountKobo > 0 ? (
+              <> Value: <span className="tnum ink">{naira(value)}</span> before your promo — credit is what you paid, after discounts.</>
+            ) : (
+              <> Value: <span className="tnum ink">{naira(value)}</span>.</>
+            )
+          )}
         </span>
         <button type="button" className="btn btn--primary exchange__btn" onClick={submit} disabled={busy || (!sent && (!windowOpen || !picked.size))}>
           {sent ? `Request sent · ${sent.number}` : busy ? "Sending…" : "Request exchange"}

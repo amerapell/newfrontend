@@ -35,6 +35,7 @@ export const useAdmin = () => {
 const NAV = [
   ["/admin", "Dashboard"],
   ["/admin/orders", "Orders"],
+  ["/admin/customers", "Customers"],
   ["/admin/products", "Products"],
   ["/admin/collections", "Collections"],
   ["/admin/exchanges", "Exchanges"],

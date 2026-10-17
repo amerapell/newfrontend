@@ -361,6 +361,30 @@ export type AdminDashboard = {
 /** GET /admin/orders list item */
 export type AdminOrder = Order & { utmSource: string | null };
 
+/** GET /admin/customers — registered accounts and guest checkout emails, merged by lowercased email. */
+export type AdminCustomer = {
+  email: string;
+  userId: string | null;
+  name: string;
+  phone: string | null;
+  registered: boolean;
+  verified: boolean;
+  joinedAt: string | null;
+  /** Paid orders only. */
+  orders: number;
+  totalSpentKobo: Money;
+  lastOrderAt: string | null;
+  creditBalanceKobo: Money;
+};
+export type AdminCustomerSort = "recent" | "spent" | "orders";
+
+/** GET /admin/customers/:email */
+export type AdminCustomerDetail = AdminCustomer & {
+  orderList: { id: string; number: string; createdAt: string; paidAt: string | null; status: OrderStatus; provider: PaymentProviderCode | "CREDIT" | null; totalKobo: Money; itemCount: number }[];
+  addresses: Address[];
+  credit: { id: string; amountKobo: Money; reason: string; orderId: string | null; exchangeId: string | null; createdAt: string; expiresAt: string | null }[];
+};
+
 /** GET/PATCH /admin/orders/:id */
 export type AdminOrderDetail = Order & {
   userId: string | null;
