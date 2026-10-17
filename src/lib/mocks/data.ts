@@ -272,6 +272,7 @@ export const MOCK_SETTINGS: StoreSettings = {
   exchangeWindowDays: 7,
   creditExpiryDays: 365,
   freeDeliveryThresholdKobo: 300_000_00,
+  serviceImages: { stylist: null, store: null, exchange: null },
   tickerText: ["Discover Drop 04 — The Night Edit", "Delivery across Nigeria", "Exchange, never a refund"],
   drop: { title: "The Night Edit", collectionSlug: "night-edit", goLiveAt: DROP_LIVE_AT, firstRunTotal: 48, firstRunLeft: 9 },
 };

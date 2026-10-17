@@ -232,6 +232,8 @@ export type StoreSettings = {
   creditExpiryDays: number | null;
   freeDeliveryThresholdKobo: Money | null;
   tickerText: string[];
+  /** Home "Amerapelle at your service" card photos; null → plain ground with the icon. */
+  serviceImages?: ServiceImages;
   drop: DropSettings | null;
 };
 
@@ -443,3 +445,9 @@ export type FaqItemAdmin = { id: string; group: string; question: string; answer
 export type AdminLoginResponse = { requiresTotp: true; tempToken: string } | { requiresTotp: false; accessToken: string; totpEnabled: false };
 
 export type CloudinarySignature = { cloudName: string; apiKey: string; timestamp: number; signature: string; folder: string };
+
+export interface ServiceImages {
+  stylist: string | null;
+  store: string | null;
+  exchange: string | null;
+}

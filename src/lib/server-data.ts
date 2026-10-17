@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   creditExpiryDays: null,
   freeDeliveryThresholdKobo: null,
   tickerText: [],
+  serviceImages: { stylist: null, store: null, exchange: null },
   drop: null,
 };
 

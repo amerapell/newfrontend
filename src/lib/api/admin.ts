@@ -92,7 +92,42 @@ export const adminApi = {
   updatePage: (slug: string, b: { title?: string; bodyMarkdown?: string }) => api.patch<ContentPage>(`admin/pages/${slug}`, b, a),
 };
 
-type UploadMode = ({ mode: "cloudinary" } & CloudinarySignature) | { mode: "direct" } | (CloudinarySignature & { mode?: undefined });
+type UploadMode = (({ mode: "cloudinary" } & CloudinarySignature) | { mode: "direct" } | (CloudinarySignature & { mode?: undefined })) & { backgroundRemoval?: boolean };
+
+/** Whether the server can cut out backgrounds (the model is installed). Cached for the session. */
+let removalAvailable: Promise<boolean> | null = null;
+export function backgroundRemovalAvailable(): Promise<boolean> {
+  removalAvailable ??= api
+    .post<UploadMode>("admin/uploads/sign", undefined, a)
+    .then((m) => !!m.backgroundRemoval)
+    .catch(() => {
+      removalAvailable = null;
+      return false;
+    });
+  return removalAvailable;
+}
+
+export interface CutoutUpload {
+  /** The cut-out on the stage ground. */
+  url: string;
+  /** The untouched photo, when `keepOriginal` was asked for. */
+  originalUrl: string | null;
+}
+
+/**
+ * Upload with automatic background removal: the server cuts the subject out and places it on the stage ground
+ * (`portrait` 4:5 for product shots, `landscape` 3:2 for banners). Always goes through our API, even when
+ * Cloudinary is configured, because the cut-out is made on the server. Takes a few seconds per photo.
+ */
+export async function uploadCutout(file: File, opts: { layout?: "portrait" | "landscape"; keepOriginal?: boolean } = {}): Promise<CutoutUpload> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("removeBackground", "true");
+  fd.append("layout", opts.layout ?? "portrait");
+  if (opts.keepOriginal) fd.append("keepOriginal", "true");
+  const res = await api.post<{ url: string; originalUrl?: string | null }>("admin/uploads/image", fd, { ...a, direct: true, signal: AbortSignal.timeout(90_000) });
+  return { url: res.url, originalUrl: res.originalUrl ?? null };
+}
 
 /**
  * Admin image upload (product images, collection hero images). POST /admin/uploads/sign says how:

@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FieldBox, SelectBox, TextAreaBox, CheckRow } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
-import { adminApi, uploadImage } from "@/lib/api";
+import { adminApi, backgroundRemovalAvailable, uploadCutout, uploadImage } from "@/lib/api";
 import { apiMessage, longDate, naira, slugify } from "@/lib/format";
 import type { AdminProduct, AdminProductInput, Colour, ProductStatus, SizeGuideKind, Variant } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
@@ -157,6 +157,16 @@ export function ProductEditor({ id }: { id?: string }) {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(0);
+  const [canCutout, setCanCutout] = useState(false);
+  const [cutout, setCutout] = useState(true);
+  const [keepOriginal, setKeepOriginal] = useState(true);
+  useEffect(() => {
+    let live = true;
+    void backgroundRemovalAvailable().then((ok) => live && setCanCutout(ok));
+    return () => {
+      live = false;
+    };
+  }, []);
   const [err, setErr] = useState<string | null>(null);
   const [newColour, setNewColour] = useState<Colour>({ name: "", hex: "#16161a" });
   const [newSize, setNewSize] = useState("");
@@ -196,17 +206,30 @@ export function ProductEditor({ id }: { id?: string }) {
 
   const upload = async (files: FileList | null) => {
     if (!files) return;
+    const removing = canCutout && cutout;
     const list = Array.from(files).slice(0, 8 - form.images.length);
     setUploading(list.length);
+    // With background removal: cut-outs first (product shots), then the untouched originals (worn / detail).
+    const originals: { url: string; alt: string }[] = [];
     for (const f of list) {
+      const alt = form.name || f.name.replace(/\.\w+$/, "");
       try {
-        const url = await uploadImage(f);
-        setForm((x) => ({ ...x!, images: [...x!.images, { url, alt: x!.name || f.name.replace(/\.\w+$/, ""), colour: null }] }));
+        if (removing) {
+          const r = await uploadCutout(f, { layout: "portrait", keepOriginal });
+          setForm((x) => ({ ...x!, images: [...x!.images, { url: r.url, alt: x!.name || alt, colour: null }].slice(0, 8) }));
+          if (r.originalUrl) originals.push({ url: r.originalUrl, alt });
+        } else {
+          const url = await uploadImage(f);
+          setForm((x) => ({ ...x!, images: [...x!.images, { url, alt: x!.name || alt, colour: null }].slice(0, 8) }));
+        }
       } catch (e) {
         toast.show({ message: apiMessage(e, `Couldn't upload ${f.name}`), tone: "error" });
       } finally {
         setUploading((n) => n - 1);
       }
+    }
+    if (originals.length) {
+      setForm((x) => ({ ...x!, images: [...x!.images, ...originals.map((o) => ({ url: o.url, alt: `${x!.name || o.alt} — worn`, colour: null }))].slice(0, 8) }));
     }
   };
 
@@ -293,6 +316,12 @@ export function ProductEditor({ id }: { id?: string }) {
         <section className="admin-card">
           <div className="mono-label admin-card__head">Images · {form.images.length} / 8</div>
           <p className="t-small t-grey">Image 1 is the product shot on the plain ground; image 2 is the worn / detail shot. Drag order with the arrows.</p>
+          {canCutout && (
+            <div className="stack gap-4">
+              <CheckRow checked={cutout} onChange={setCutout} id="cutout" sub="Cuts the person or piece out and puts it on the plain ground, like the rest of the shop. Takes a few seconds per photo — check the edges after.">Remove background</CheckRow>
+              {cutout && <CheckRow checked={keepOriginal} onChange={setKeepOriginal} id="keeporig" sub="Adds the untouched photo after the cut-out — it shows on hover and as image 2">Also keep the original photo</CheckRow>}
+            </div>
+          )}
           <div className="img-grid">
             {form.images.map((img, i) => (
               <div key={img.url + i} className="img-grid__item">
@@ -321,7 +350,7 @@ export function ProductEditor({ id }: { id?: string }) {
               <label className="img-grid__add">
                 <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e.target.files)} />
                 <span className="serif">+</span>
-                <span className="mono-xs">{uploading ? `Uploading ${uploading}…` : form.images.length < 2 ? `Upload ${IMAGE_SLOTS[form.images.length].split(" (")[0].toLowerCase()}` : "Upload images"}</span>
+                <span className="mono-xs">{uploading ? (canCutout && cutout ? `Removing background… ${uploading} left` : `Uploading ${uploading}…`) : form.images.length < 2 ? `Upload ${IMAGE_SLOTS[form.images.length].split(" (")[0].toLowerCase()}` : "Upload images"}</span>
               </label>
             )}
           </div>

@@ -5,4 +5,5 @@ export { checkoutApi } from "./checkout";
 export { authApi } from "./auth";
 export { accountApi } from "./account";
 export { exchangesApi } from "./exchanges";
-export { adminApi, uploadImage, uploadToCloudinary } from "./admin";
+export { adminApi, uploadImage, uploadToCloudinary, uploadCutout, backgroundRemovalAvailable } from "./admin";
+export type { CutoutUpload } from "./admin";

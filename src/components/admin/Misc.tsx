@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckRow, FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
-import { adminApi, uploadImage } from "@/lib/api";
+import { adminApi, backgroundRemovalAvailable, uploadCutout, uploadImage } from "@/lib/api";
 import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, slugify } from "@/lib/format";
 import type { AdminCollection, ContentPage, DeliveryZone, Discount, DiscountType, ExchangeStatus, FaqItemAdmin, StoreSettings } from "@/lib/types";
 import { AdminHead, setAdminTotpFlag, useAdmin, useAsync } from "./AdminShell";
@@ -115,17 +115,32 @@ export function ExchangesAdmin() {
 /* ---------------- Collections ---------------- */
 
 function HeroImageField({ value, onChange }: { value: string | null | undefined; onChange: (url: string | null) => void }) {
+  return <ImageField label="Hero image · home panel and menu feature (landscape, at least 1600 × 1000)" empty="No image — the home panel shows a plain ground" value={value} onChange={onChange} allowCutout />;
+}
+
+/** One landscape photo slot. `allowCutout` offers background removal (subject placed on the stage ground, 3:2). */
+function ImageField({ label, empty, value, onChange, allowCutout = false }: { label: string; empty: string; value: string | null | undefined; onChange: (url: string | null) => void; allowCutout?: boolean }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [canCutout, setCanCutout] = useState(false);
+  const [cutout, setCutout] = useState(false);
+  useEffect(() => {
+    if (!allowCutout) return;
+    let live = true;
+    void backgroundRemovalAvailable().then((ok) => live && setCanCutout(ok));
+    return () => {
+      live = false;
+    };
+  }, [allowCutout]);
   return (
     <div className="hero-field">
-      <span className="hero-field__label">Hero image · home panel and menu feature (landscape, at least 1600 × 1000)</span>
+      <span className="hero-field__label">{label}</span>
       <div className="hero-field__img">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt="" />
         ) : (
-          <span className="t-small t-grey">No image — the home panel shows a plain ground</span>
+          <span className="t-small t-grey">{empty}</span>
         )}
       </div>
       <div className="row gap-16">
@@ -139,7 +154,7 @@ function HeroImageField({ value, onChange }: { value: string | null | undefined;
               if (!f) return;
               setBusy(true);
               try {
-                onChange(await uploadImage(f));
+                onChange(canCutout && cutout ? (await uploadCutout(f, { layout: "landscape" })).url : await uploadImage(f));
               } catch (x) {
                 toast.show({ message: apiMessage(x, `Couldn't upload ${f.name}`), tone: "error" });
               } finally {
@@ -148,10 +163,16 @@ function HeroImageField({ value, onChange }: { value: string | null | undefined;
               }
             }}
           />
-          {busy ? "Uploading…" : value ? "Replace image" : "Upload image"}
+          {busy ? (canCutout && cutout ? "Removing background…" : "Uploading…") : value ? "Replace image" : "Upload image"}
         </label>
         {value && <button type="button" className="u-link" onClick={() => onChange(null)}>Remove</button>}
       </div>
+      {canCutout && (
+        <label className="row gap-8 t-small">
+          <input type="checkbox" checked={cutout} onChange={(e) => setCutout(e.target.checked)} />
+          Remove background (puts the subject on the plain ground)
+        </label>
+      )}
     </div>
   );
 }
@@ -443,6 +464,25 @@ export function SettingsAdmin() {
             <FieldBox label="Email" type="email" value={s.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
             <FieldBox label="Instagram URL" value={s.instagramUrl} onChange={(e) => set("instagramUrl", e.target.value)} />
             <FieldBox label="TikTok URL" value={s.tiktokUrl} onChange={(e) => set("tiktokUrl", e.target.value)} />
+          </div>
+        </section>
+        <section className="admin-card">
+          <div className="mono-label admin-card__head">Home · &ldquo;Amerapelle at your service&rdquo; photos</div>
+          <p className="t-small t-grey">Landscape photos (3 : 2). Without a photo the card shows a plain ground with an icon.</p>
+          <div className="field-grid field-grid--200">
+            {([
+              ["stylist", "Style advice on WhatsApp"],
+              ["store", "Visit the store"],
+              ["exchange", "Exchange, never a refund"],
+            ] as const).map(([key, title]) => (
+              <ImageField
+                key={key}
+                label={title}
+                empty="No photo — icon only"
+                value={s.serviceImages?.[key] ?? null}
+                onChange={(url) => set("serviceImages", { stylist: null, store: null, exchange: null, ...s.serviceImages, [key]: url })}
+              />
+            ))}
           </div>
         </section>
         <section className="admin-card">

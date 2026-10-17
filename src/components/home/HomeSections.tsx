@@ -31,9 +31,9 @@ function ExchangeIcon() {
 export function ServiceCards({ settings }: { settings: StoreSettings }) {
   const map = settings.pickupAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.pickupAddress)}` : "/contact";
   const cards = [
-    { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true },
-    { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress },
-    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false },
+    { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true, image: settings.serviceImages?.stylist ?? null },
+    { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress, image: settings.serviceImages?.store ?? null },
+    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false, image: settings.serviceImages?.exchange ?? null },
   ];
   return (
     <section className="service container" aria-labelledby="service-title">
@@ -42,8 +42,8 @@ export function ServiceCards({ settings }: { settings: StoreSettings }) {
         {cards.map((c) => (
           <li key={c.title} className="service__card">
             <span className="service__img">
-              <Photo src={null} alt="" />
-              <span className="service__icon">{c.icon}</span>
+              <Photo src={c.image} alt="" sizes="(max-width: 767px) 100vw, 33vw" />
+              {!c.image && <span className="service__icon">{c.icon}</span>}
             </span>
             <h3 className="t-title">{c.title}</h3>
             <p>{c.text}</p>
