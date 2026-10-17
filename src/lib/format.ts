@@ -5,6 +5,7 @@ export const CREDIT_REASON_LABEL: Record<string, string> = {
   ORDER_PAYMENT: "Spent on order",
   ORDER_CANCELLED_REFUND_TO_CREDIT: "Returned from cancelled order",
   ORDER_PAYMENT_REAPPLIED: "Re-applied to order",
+  ORDER_UNFULFILLED_CREDIT: "Order we couldn't fulfil",
 };
 
 export const creditReasonLabel = (r: string) => CREDIT_REASON_LABEL[r] ?? r;

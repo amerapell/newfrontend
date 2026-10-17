@@ -30,7 +30,7 @@ export function OrdersAdmin() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   return (
     <>
-      <AdminHead index={`Orders · ${data?.total ?? "…"}`} title={<>All <em>orders</em></>} />
+      <AdminHead title={`Orders${data ? ` (${data.total})` : ""}`} />
       <div className="admin-filters">
         <input className="admin-input" placeholder="Search number, email, name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search orders" />
         <select className="admin-input" value={status} onChange={(e) => setParam("status", e.target.value)} aria-label="Status">
@@ -93,7 +93,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
     try {
       const u = await adminApi.updateOrder(o.id, b);
       setData(u);
-      toast.show({ message: b.status ? `Status → ${ORDER_STATUS_LABEL[b.status]}${["DISPATCHED", "READY_FOR_PICKUP", "DELIVERED"].includes(b.status) ? " · customer emailed" : ""}` : "Note added." });
+      toast.show({ message: b.status ? `Status → ${ORDER_STATUS_LABEL[b.status]} · customer emailed` : "Note added." });
       if (b.note) setNote("");
     } catch (e) {
       onError(e);
@@ -122,12 +122,14 @@ export function OrderAdminDetail({ id }: { id: string }) {
             <select className="admin-input" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} aria-label="Order status">
               {STATUSES.map((s) => <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>)}
             </select>
-            <button className="btn btn--short" disabled={busy || status === o.status || !status} onClick={() => patch({ status: status as OrderStatus })}>Update status</button>
+            <button className="btn btn--short" disabled={busy || status === o.status || !status} onClick={() => {
+                if (status === "CANCELLED" && o.status !== "PENDING_PAYMENT" && !confirm(`Cancel ${o.number}? The customer gets ${naira(o.amountDueKobo + o.creditAppliedKobo)} as store credit to choose another piece (no cash refunds), and an email.`)) return;
+                void patch({ status: status as OrderStatus });
+              }}>Update status</button>
           </div>
-          <p className="mono-xs">Dispatched, ready for pickup and delivered email the customer.</p>
+          <p className="mono-xs">Every status change emails the customer; the store gets a copy.</p>
           <dl className="order-meta">
             <div><dt className="mono-xs">Payment</dt><dd>{o.payment?.provider ?? "—"} · {o.payment?.status ?? "—"}{o.payment?.reference ? ` · ${o.payment.reference}` : ""}</dd></div>
-            <div><dt className="mono-xs">Source · UTM</dt><dd>{[o.utm.source ?? "direct", o.utm.medium, o.utm.campaign].filter(Boolean).join(" / ")}</dd></div>
             {o.discountCode && <div><dt className="mono-xs">Promo</dt><dd className="mono">{o.discountCode}</dd></div>}
             <div><dt className="mono-xs">Customer</dt><dd>{o.userId ? "Account holder" : "Guest checkout"} · {o.marketingConsent ? "opted in to marketing" : "no marketing consent"}</dd></div>
             <div><dt className="mono-xs">Contact</dt><dd><Link href={customerHref(o.email)} className="ap-link">{o.email}</Link><br />{o.phone}</dd></div>
