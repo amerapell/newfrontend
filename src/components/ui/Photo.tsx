@@ -12,3 +12,9 @@ export function Photo({ src, alt, sizes = "100vw", priority, fit = "cover", clas
     </span>
   );
 }
+
+/** A photo we can actually show: not empty and not a grey placehold.co stand-in (those are hidden, not rendered). */
+export function realImage(src: string | null | undefined): string | null {
+  if (!src || !src.trim()) return null;
+  return /(^|\/\/)placehold\.co\//i.test(src) ? null : src;
+}

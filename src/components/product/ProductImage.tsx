@@ -1,3 +1,4 @@
+import { realImage } from "@/components/ui/Photo";
 import type { CSSProperties } from "react";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { ICON_PATHS, iconKind, type IconKind } from "@/lib/product";
@@ -40,7 +41,8 @@ export function ProductImage({
   style?: CSSProperties;
   fit?: "cover" | "contain";
 }) {
-  if (!src) return <ImagePlaceholder kind={kind} size={iconSize} className={className} style={style} />;
+  if (!realImage(src)) return <ImagePlaceholder kind={kind} size={iconSize} className={className} style={style} />;
+  src = src!;
   return (
     <div className={`img-fill ${className}`} style={style}>
       <SmartImage src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: fit }} />

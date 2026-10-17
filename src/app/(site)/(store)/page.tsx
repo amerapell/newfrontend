@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeroPanel, type HeroPanelData } from "@/components/home/HeroPanel";
+import { realImage } from "@/components/ui/Photo";
 import { ServiceCards, StoryPanel } from "@/components/home/HomeSections";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { catalogApi, safe } from "@/lib/api";
@@ -27,24 +28,27 @@ function toPanel(c: Collection, settings: StoreSettings): HeroPanelData {
       title: `${label} — ${dropTitle(label, settings.drop.title)}`,
       linkLabel: c.tagline || "Discover the drop",
       href: `/drop/${c.slug}`,
-      image: c.heroImageUrl ?? null,
+      image: realImage(c.heroImageUrl),
       opensAt: phase === "upcoming" ? settings.drop.goLiveAt : null,
     };
   }
-  return { key: c.slug, title: c.name, linkLabel: c.tagline || "Discover the collection", href: `/c/${c.slug}`, image: c.heroImageUrl ?? null };
+  return { key: c.slug, title: c.name, linkLabel: c.tagline || "Discover the collection", href: `/c/${c.slug}`, image: realImage(c.heroImageUrl) };
 }
 
 export default async function HomePage() {
   const [settings, collections] = await Promise.all([getSettings(), getCollections()]);
   const phase = dropPhase(settings.drop).phase;
   const dropSlug = phase === "live" || phase === "upcoming" ? settings.drop?.collectionSlug : null;
-  const panels = homePanels(collections, dropSlug).map((c) => toPanel(c, settings));
+  // Only panels with a photo are shown — a collection without one stays off the home page until the admin adds it.
+  const panels = homePanels(collections, dropSlug)
+    .map((c) => toPanel(c, settings))
+    .filter((p) => p.image);
   const newIn = await safe(
     catalogApi.collection("new-in", { pageSize: 12, sort: "newest" }).then((r) => r.products.items),
     [],
   );
   const fallback = newIn.length ? newIn : await safe(catalogApi.products({ pageSize: 12, sort: "newest" }).then((r) => r.items), []);
-  const story = collections.find((c) => c.slug === "new-in")?.heroImageUrl ?? null;
+  const story = realImage(collections.find((c) => c.slug === "new-in")?.heroImageUrl);
   const [first, second, ...rest] = panels;
 
   return (
@@ -56,7 +60,7 @@ export default async function HomePage() {
       {rest.map((p) => (
         <HeroPanel key={p.key} panel={p} />
       ))}
-      <StoryPanel image={story} />
+      {story && <StoryPanel image={story} />}
       <ServiceCards settings={settings} />
     </div>
   );

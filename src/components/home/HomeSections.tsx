@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BagIcon, WhatsAppIcon } from "@/components/chrome/Icons";
-import { Photo } from "@/components/ui/Photo";
+import { Photo, realImage } from "@/components/ui/Photo";
 import { whatsappLink } from "@/lib/product";
 import type { StoreSettings } from "@/lib/types";
 
@@ -31,9 +31,9 @@ function ExchangeIcon() {
 export function ServiceCards({ settings }: { settings: StoreSettings }) {
   const map = settings.pickupAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.pickupAddress)}` : "/contact";
   const cards = [
-    { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true, image: settings.serviceImages?.stylist ?? null },
-    { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress, image: settings.serviceImages?.store ?? null },
-    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false, image: settings.serviceImages?.exchange ?? null },
+    { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true, image: realImage(settings.serviceImages?.stylist) },
+    { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress, image: realImage(settings.serviceImages?.store) },
+    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false, image: realImage(settings.serviceImages?.exchange) },
   ];
   return (
     <section className="service container" aria-labelledby="service-title">
@@ -41,10 +41,11 @@ export function ServiceCards({ settings }: { settings: StoreSettings }) {
       <ul className="service__cards">
         {cards.map((c) => (
           <li key={c.title} className="service__card">
-            <span className="service__img">
-              <Photo src={c.image} alt="" sizes="(max-width: 767px) 100vw, 33vw" />
-              {!c.image && <span className="service__icon">{c.icon}</span>}
-            </span>
+            {c.image && (
+              <span className="service__img">
+                <Photo src={c.image} alt="" sizes="(max-width: 767px) 100vw, 33vw" />
+              </span>
+            )}
             <h3 className="t-title">{c.title}</h3>
             <p>{c.text}</p>
             <a href={c.href} className="u-link" target={c.external ? "_blank" : undefined} rel={c.external ? "noopener noreferrer" : undefined}>
