@@ -39,6 +39,9 @@ export function WelcomePopup() {
   const [state, setState] = useState<"idle" | "busy" | "ok" | "error">("idle");
   const [msg, setMsg] = useState("");
   const quiet = QUIET.some((p) => pathname.startsWith(p));
+  // Landing on the home page → full-screen welcome. Arriving on any other page (e.g. a product) → a sheet that
+  // rises under the header, so the brand and the page stay visible behind it.
+  const [full, setFull] = useState(false);
 
   useEffect(() => {
     if (!w?.enabled || quiet || seen()) return;
@@ -48,13 +51,14 @@ export function WelcomePopup() {
       window.clearTimeout(t);
       t = window.setTimeout(() => setOpen(true), DELAY_MS);
     };
+    setFull(pathname === "/");
     if (readCookieConsent()) later();
     window.addEventListener(COOKIE_DECIDED_EVENT, later);
     return () => {
       window.clearTimeout(t);
       window.removeEventListener(COOKIE_DECIDED_EVENT, later);
     };
-  }, [w?.enabled, quiet]);
+  }, [w?.enabled, quiet, pathname]);
 
   // Phones: the sheet starts exactly where the header ends, so the brand stays visible above it.
   useEffect(() => {
@@ -91,7 +95,7 @@ export function WelcomePopup() {
   const image = realImage(w.imageUrl);
 
   return (
-    <Drawer open={open} onClose={close} title={w.title} className="welcome">
+    <Drawer open={open} onClose={close} title={w.title} className={full ? "welcome welcome--full" : "welcome welcome--sheet"}>
       {image && (
         <div className="welcome__img">
           <Photo src={image} alt="" sizes="(max-width: 767px) 100vw, 480px" />

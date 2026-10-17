@@ -174,20 +174,21 @@
 .section-head__title { font-size: var(--fs-title); }
 
 /* ---------- Welcome pop-up (first visit) ---------- */
-/* Slides up from the bottom and stops below the header, so the brand stays visible behind the dimmed page */
-.drawer.welcome {
+/* Home landing: .welcome--full is the standard drawer (full screen on phones, full-height side panel on desktop).
+   Any other page: .welcome--sheet slides up from the bottom and stops below the header, so the brand stays visible behind the dimmed page */
+.drawer.welcome--sheet {
   top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: none;
   height: calc(100dvh - var(--welcome-top, 96px));     /* phones: starts just under the header (brand stays visible) */
   max-height: calc(100dvh - var(--welcome-top, 96px));
   transform: translateY(100%);
   box-shadow: 0 -8px 32px rgba(0, 0, 0, .08);
 }
-.drawer-root.is-open .drawer.welcome { transform: none; }
+.drawer-root.is-open .drawer.welcome--sheet { transform: none; }
 .welcome .drawer__body { display: flex; flex-direction: column; gap: 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 /* Desktop: a contained card rising from the bottom-right instead of a full-width sheet */
 @media (min-width: 768px) {
-  .drawer.welcome { left: auto; right: 40px; bottom: 40px; width: 440px; height: auto; max-height: calc(100dvh - 180px); transform: translateY(calc(100% + 40px)); }
-  .drawer-root.is-open .drawer.welcome { transform: none; }
+  .drawer.welcome--sheet { left: auto; right: 40px; bottom: 40px; width: 440px; height: auto; max-height: calc(100dvh - 180px); transform: translateY(calc(100% + 40px)); }
+  .drawer-root.is-open .drawer.welcome--sheet { transform: none; }
 }
 .welcome__img { position: relative; aspect-ratio: 3 / 2; background: var(--stage); overflow: hidden; }
 .welcome__text { font-size: 17px; line-height: 1.5; }
