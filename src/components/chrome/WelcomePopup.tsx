@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { COOKIE_DECIDED_EVENT, readCookieConsent } from "@/components/chrome/CookieNotice";
 import { Drawer } from "@/components/ui/Drawer";
 import { Photo, realImage } from "@/components/ui/Photo";
 import { useSettings } from "@/context/SettingsContext";
@@ -41,8 +42,18 @@ export function WelcomePopup() {
 
   useEffect(() => {
     if (!w?.enabled || quiet || seen()) return;
-    const t = window.setTimeout(() => setOpen(true), DELAY_MS);
-    return () => window.clearTimeout(t);
+    // The cookie notice comes first; the welcome sheet follows a second after the visitor has chosen.
+    let t = 0;
+    const later = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setOpen(true), DELAY_MS);
+    };
+    if (readCookieConsent()) later();
+    window.addEventListener(COOKIE_DECIDED_EVENT, later);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener(COOKIE_DECIDED_EVENT, later);
+    };
   }, [w?.enabled, quiet]);
 
   if (!w?.enabled) return null;

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const KEY = "ap_cookie_consent";
+/** Fired once the visitor picks an option, so the welcome pop-up can follow the cookie notice. */
+export const COOKIE_DECIDED_EVENT = "ap:cookie-decided";
 export type CookieConsent = "all" | "essential";
 
 export function readCookieConsent(): CookieConsent | null {
@@ -28,6 +30,7 @@ export function CookieNotice() {
       /* ignore */
     }
     setShow(false);
+    window.dispatchEvent(new Event(COOKIE_DECIDED_EVENT));
   };
   return (
     <div className="cookie" role="region" aria-label="Cookie notice">
