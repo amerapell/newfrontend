@@ -54,7 +54,6 @@ export function MobileMenu() {
               </li>
             ))}
             {dropLink && <li><Link href={dropLink.href} className="mmenu__link">{dropLink.label} — {dropLink.title}</Link></li>}
-            <li><Link href="/reel" className="mmenu__link">Shop the reel</Link></li>
             <li><Link href="/about" className="mmenu__link">About</Link></li>
           </ul>
           <ul className="mmenu__foot">

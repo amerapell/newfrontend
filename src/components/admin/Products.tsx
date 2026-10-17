@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { FieldBox, SelectBox, TextAreaBox, CheckRow } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
 import { adminApi, backgroundRemovalAvailable, uploadCutout, uploadImage } from "@/lib/api";
-import { apiMessage, longDate, naira, slugify } from "@/lib/format";
+import { apiMessage, naira, slugify } from "@/lib/format";
 import type { AdminProduct, AdminProductInput, Colour, ProductStatus, SizeGuideKind, Variant } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
 
@@ -35,8 +35,7 @@ export function ProductsList() {
   return (
     <>
       <AdminHead
-        index={`Products · ${data?.total ?? "…"}`}
-        title={<>Your <em>pieces</em></>}
+        title={`Products${data ? ` (${data.total})` : ""}`}
         actions={
           <>
             <button
@@ -89,20 +88,17 @@ export function ProductsList() {
       </div>
       <table className="admin-table">
         <thead>
-          <tr><th>No.</th><th>Piece</th><th>Status</th><th className="num">Price</th><th className="num">Stock</th><th className="num">Available</th><th className="num">Variants</th><th>Updated</th><th /></tr>
+          <tr><th>No.</th><th>Piece</th><th>Status</th><th className="num">Price</th><th className="num">In stock</th><th /></tr>
         </thead>
         <tbody>
-          {loading && !data && <tr><td colSpan={9} className="mono-label">Loading…</td></tr>}
+          {loading && !data && <tr><td colSpan={6} className="mono-label">Loading…</td></tr>}
           {data?.items.map((p) => (
             <tr key={p.id}>
               <td className="mono-xs">{p.number}</td>
               <td><Link href={`/admin/products/${p.id}`} className="ap-link">{p.name}</Link></td>
-              <td><span className={`status-pill status-pill--${p.status.toLowerCase()}`}>{p.status}</span></td>
+              <td><span className={`status-pill status-pill--${p.status.toLowerCase()}`}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td>
               <td className="num tnum">{naira(p.priceKobo)}</td>
-              <td className="num tnum">{p.stock}</td>
               <td className={`num tnum${p.available <= 2 ? " red" : ""}`}>{p.available}</td>
-              <td className="num tnum">{p.variantCount}</td>
-              <td className="mono-xs">{longDate(p.updatedAt)}</td>
               <td className="num"><Link href={`/p/${p.slug}`} target="_blank" className="mono-xs">View ↗</Link></td>
             </tr>
           ))}
@@ -246,7 +242,7 @@ export function ProductEditor({ id }: { id?: string }) {
     <>
       <AdminHead
         index={id ? `Products / no. ${form.number}` : "Products / new"}
-        title={id ? form.name || "Untitled" : <>New <em>piece</em></>}
+        title={id ? form.name || "Untitled" : "New product"}
         actions={
           <>
             {id && existing.data && <Link href={`/p/${existing.data.slug}`} target="_blank" className="btn btn--ghost">View ↗</Link>}
@@ -278,9 +274,8 @@ export function ProductEditor({ id }: { id?: string }) {
           <div className="mono-label admin-card__head">Basics</div>
           <div className="field-grid field-grid--200">
             <FieldBox full label="Name" value={form.name} onChange={(e) => set("name", e.target.value)} />
-            <FieldBox label="NUMBER · e.g. 014" value={form.number} onChange={(e) => set("number", e.target.value.replace(/^No\.\s*/i, ""))} />
-            <FieldBox label="Slug" value={form.slug ?? ""} placeholder={slugify(form.name)} onChange={(e) => set("slug", slugify(e.target.value))} />
-            <FieldBox full label="MATERIAL · CATEGORY — e.g. Lamb leather · Outerwear" value={form.material} onChange={(e) => set("material", e.target.value)} />
+            <FieldBox label="Number · e.g. 014" value={form.number} onChange={(e) => set("number", e.target.value.replace(/^No\.\s*/i, ""))} />
+            <FieldBox full label="Material · type — e.g. Denim · Two-piece" value={form.material} onChange={(e) => set("material", e.target.value)} />
             <SelectBox label="Status" value={form.status} onChange={(e) => set("status", e.target.value as ProductStatus)}>
               {STATUS.map((s) => <option key={s}>{s}</option>)}
             </SelectBox>
@@ -295,8 +290,8 @@ export function ProductEditor({ id }: { id?: string }) {
             <TextAreaBox full label="Details · cut, fit, finish" rows={2} value={form.details} onChange={(e) => set("details", e.target.value)} />
             <TextAreaBox full label="Material & care" rows={2} value={form.care} onChange={(e) => set("care", e.target.value)} />
           </div>
-          <CheckRow checked={form.exchangeable} onChange={(v) => set("exchangeable", v)} id="exch" sub="Uncheck for final-sale pieces (e.g. jewellery) — hides the exchange button">Exchangeable</CheckRow>
-          <CheckRow checked={!!form.featured} onChange={(v) => set("featured", v)} id="featured" sub="Shown large (centred, half width) after every 8 pieces in collection grids, using image 2">Featured piece in listings</CheckRow>
+          <CheckRow checked={form.exchangeable} onChange={(v) => set("exchangeable", v)} id="exch" sub="Untick for final-sale pieces such as jewellery">Exchangeable</CheckRow>
+          <CheckRow checked={!!form.featured} onChange={(v) => set("featured", v)} id="featured" sub="Shown large in collection grids">Featured piece in listings</CheckRow>
         </section>
 
         <section className="admin-card">
@@ -315,7 +310,7 @@ export function ProductEditor({ id }: { id?: string }) {
 
         <section className="admin-card">
           <div className="mono-label admin-card__head">Images · {form.images.length} / 8</div>
-          <p className="t-small t-grey">Image 1 is the product shot on the plain ground; image 2 is the worn / detail shot. Drag order with the arrows.</p>
+          <p className="t-small t-grey">Image 1 shows in the shop; image 2 shows on hover. Reorder with the arrows.</p>
           {canCutout && (
             <div className="stack gap-4">
               <CheckRow checked={cutout} onChange={setCutout} id="cutout" sub="Cuts the person or piece out and puts it on the plain ground, like the rest of the shop. Takes a few seconds per photo — check the edges after.">Remove background</CheckRow>
@@ -357,7 +352,7 @@ export function ProductEditor({ id }: { id?: string }) {
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">Options → variant matrix ({matrix.length})</div>
+          <div className="mono-label admin-card__head">Colours &amp; sizes ({matrix.length})</div>
           <div className="stack gap-12">
             <div>
               <span className="mono-xs">Colours</span>
@@ -434,7 +429,7 @@ function VariantTable({ variants, onChange }: { variants: Variant[]; onChange: (
   };
   return (
     <section className="admin-card">
-      <div className="mono-label admin-card__head">Variants · price / compare-at / stock</div>
+      <div className="mono-label admin-card__head">Stock &amp; prices</div>
       <div className="table-scroll">
         <table className="admin-table">
           <thead>

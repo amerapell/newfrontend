@@ -73,7 +73,7 @@ export function CheckoutComplete({ reference, zones }: { reference: string | nul
 
   const title = failed ? "Your payment didn't go through." : pending ? "Waiting for your payment." : firstName ? `Thank you, ${firstName}.` : "Thank you.";
   const statusLine = failed
-    ? "Your bag is still saved. You can try again with Paystack or Bachs."
+    ? "Your bag is still saved, so you can try again."
     : pending
       ? "We're waiting for your bank to confirm. This page updates automatically — there's no need to pay again."
       : `Paid with ${paidWith}. A receipt is on its way to ${order.email}.`;

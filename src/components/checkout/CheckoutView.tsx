@@ -179,7 +179,6 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
   const creditAvail = quote?.creditAvailableKobo ?? user?.creditBalanceKobo ?? 0;
   const creditApplied = quote?.creditAppliedKobo ?? 0;
   const due = quote?.amountDueKobo ?? Math.max(0, sub - discount + delivery);
-  const providerName = enabled.find((p) => p.code === provider)?.name ?? "card";
   const creditOnly = due === 0 && lines.length > 0;
   const payLabel = submitting ? "Opening secure payment…" : creditOnly ? "Place order — paid with credit" : `Pay ${naira(due)}`;
   const n = cart?.itemCount ?? 0;
@@ -297,14 +296,9 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
             <FieldBox label="Email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: undefined })); }} error={errors.email} required />
             <FieldBox label="Phone (+234)" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="803 000 0000" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((x) => ({ ...x, phone: undefined })); }} error={errors.phone} required />
           </div>
-          <Check id="consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">
-            Email me about new drops and private sales
+          <Check id="consent" checked={consent} onChange={setConsent}>
+            Email me about new pieces
           </Check>
-          {status === "guest" && (
-            <p className="cm-soft">
-              <Link href="/account?next=/checkout" className="u-link">Sign in for faster checkout</Link>
-            </p>
-          )}
         </Section>
 
         <Section n={2} id="co-delivery" title="Delivery">
@@ -393,21 +387,19 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
             <p className="cm-error">Online payment is paused right now. Message us on WhatsApp to order.</p>
           )}
           {errors.provider && <span id="co-pay-err" className="cm-error" role="alert">{errors.provider}</span>}
-          {!creditOnly && enabled.length > 0 && <p className="cm-small cm-soft">You&apos;ll finish on {providerName}&apos;s secure page. Your order is confirmed once payment clears.</p>}
           {creditAvail > 0 && (
             <CreditToggle amountKobo={useCredit && creditApplied ? creditApplied : Math.min(creditAvail, sub - discount + delivery)} on={useCredit} onChange={setUseCredit} source={source} />
           )}
         </Section>
 
         <Section n={4} id="co-review" title="Review">
-          <div className="cm-co__review">{summary}</div>
           {formError && <p className="cm-error" role="alert">{formError}</p>}
           <button type="submit" className="btn btn--primary btn--block" disabled={submitting || !lines.length || blocked || (!enabled.length && due > 0)}>
             {payLabel}
           </button>
           {creditOnly && <p className="cm-small cm-soft">Your exchange credit covers this order — no payment needed.</p>}
           <p className="cm-small cm-soft">
-            Exchange only — no refunds. Unworn pieces can be exchanged for store credit within {settings.exchangeWindowDays} days. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
+            Exchange within {settings.exchangeWindowDays} days, no refunds. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
           </p>
         </Section>
       </div>

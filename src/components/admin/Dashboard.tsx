@@ -7,11 +7,10 @@ import { AdminHead, useAsync } from "./AdminShell";
 /** ADM-5: today's sales, orders to fulfil, best sellers, low stock, orders by source (UTM). */
 export function Dashboard() {
   const { data, error, loading } = useAsync(() => adminApi.dashboard(), []);
-  const maxSource = Math.max(1, ...(data?.ordersBySource.map((s) => s.count) ?? [1]));
   const maxBest = Math.max(1, ...(data?.bestSellers.map((s) => s.units) ?? [1]));
   return (
     <>
-      <AdminHead index="Dashboard" title={<>Today at <em>Amerapelle</em></>} />
+      <AdminHead title="Dashboard" />
       {error && <p className="form-error">{error}</p>}
       {loading && !data && <p className="mono-label">Loading…</p>}
       {data && (
@@ -41,18 +40,6 @@ export function Dashboard() {
                     <span className="bars__label">{b.name}</span>
                     <span className="bars__track"><span style={{ width: `${(b.units / maxBest) * 100}%` }} /></span>
                     <span className="tnum mono-xs">{b.units}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="admin-card">
-              <div className="mono-label admin-card__head">Orders by source · UTM</div>
-              <ul className="bars">
-                {data.ordersBySource.map((s) => (
-                  <li key={s.source}>
-                    <span className="bars__label">{s.source}</span>
-                    <span className="bars__track bars__track--navy"><span style={{ width: `${(s.count / maxSource) * 100}%` }} /></span>
-                    <span className="tnum mono-xs">{s.count}</span>
                   </li>
                 ))}
               </ul>

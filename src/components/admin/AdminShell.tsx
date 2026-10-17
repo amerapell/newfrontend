@@ -119,11 +119,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminHead({ index, title, actions }: { index: string; title: ReactNode; actions?: ReactNode }) {
+export function AdminHead({ index, title, actions }: { index?: string; title: ReactNode; actions?: ReactNode }) {
   return (
     <div className="admin-head">
       <div>
-        <div className="mono-label">{index}</div>
+        {index && <div className="mono-label">{index}</div>}
         <h1 className="serif admin-head__title">{title}</h1>
       </div>
       {actions && <div className="admin-head__actions">{actions}</div>}

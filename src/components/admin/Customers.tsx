@@ -39,7 +39,7 @@ export function CustomersAdmin() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   return (
     <>
-      <AdminHead index={`Customers · ${data?.total ?? "…"}`} title={<>Your <em>customers</em></>} />
+      <AdminHead title={`Customers${data ? ` (${data.total})` : ""}`} />
       <div className="admin-filters">
         <input className="admin-input" placeholder="Search name, email or phone" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search customers" />
         <select className="admin-input" value={sort} onChange={(e) => setParam("sort", e.target.value === "recent" ? "" : e.target.value)} aria-label="Sort">

@@ -1,108 +1,14 @@
 /* ==========================================================================
-   Motion — design v3 §7 Drop launch + Shop the reel (restyled), the shared
-   quiet keyframes (fade-in, fade-up) and prefers-reduced-motion rules.
+   Motion — the shared quiet keyframes (fade-in, fade-up) and prefers-reduced-motion rules.
    ========================================================================== */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes reel-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 .fade-in { animation: fade-in var(--dur) var(--ease) both; }
 .fade-up { animation: fade-up 600ms var(--ease) both; }
 
-/* ---------- Drop launch (/drop/[slug]) ---------- */
-.drop {
-  position: fixed; inset: 0; z-index: 300;
-  display: grid; place-items: center; overflow-y: auto;
-  background: var(--espresso); color: var(--white);
-  transition: opacity 600ms var(--ease);
-  animation: fade-in 600ms var(--ease) both;
-}
-.drop.is-fading { opacity: 0; pointer-events: none; }
-.drop__bg { position: absolute; inset: 0; }
-.drop__bg .photo { position: absolute; inset: 0; }
-.drop__bg .photo--empty { background: transparent; }
-.drop__bg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .4); }
-.drop__logo { position: absolute; z-index: 1; top: 24px; left: var(--gutter); display: inline-flex; }
-.drop__centre {
-  position: relative; z-index: 1; width: 100%; max-width: calc(440px + 2 * var(--gutter));
-  padding: 96px var(--gutter) 64px;
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
-}
-.drop__centre .t-display { line-height: var(--lh); }
-.drop__clock { display: flex; justify-content: center; align-items: flex-start; margin: 28px 0 36px; }
-.drop__unit { display: grid; grid-template-columns: auto auto; grid-template-areas: "sep num" ". lbl"; justify-items: center; }
-.drop__sep { grid-area: sep; font-size: var(--fs-display); line-height: var(--lh); padding: 0 14px; opacity: .7; }
-.drop__num { grid-area: num; font-size: var(--fs-display); line-height: var(--lh); font-variant-numeric: tabular-nums lining-nums; min-width: 2ch; text-align: center; }
-.drop__lbl { grid-area: lbl; font-size: var(--fs-small); line-height: var(--lh); opacity: .8; }
-.drop__form { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
-.drop__form .line-field button { color: var(--white); }
-.drop__form .line-field button:disabled { opacity: .5; }
-.drop__browse { margin-top: 28px; color: var(--white); }
-@media (max-width: 767px) {
-  .drop__sep { padding: 0 8px; }
-  .drop__clock { margin: 24px 0 32px; }
-}
-
-.drop-list { min-height: 60vh; }
-.drop-list.is-waiting { min-height: 100vh; }
-.drop-list .cat-head .t-small { margin-bottom: 4px; }
-.drop-list .toolbar__count { color: var(--ink); }
-
-/* ---------- Shop the reel (/reel) ---------- */
-.reel {
-  position: fixed; inset: 0; z-index: 200; overflow: hidden;
-  background: #000; color: var(--white);
-  overscroll-behavior: none; touch-action: pan-x;
-}
-.reel--empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: var(--gutter); }
-.reel__track { position: absolute; inset: 0; transition: transform 600ms var(--ease); will-change: transform; }
-.reel__look { position: relative; height: 100%; display: flex; justify-content: center; overflow: hidden; }
-.reel__media { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* soft top shade so the white bars, logo and icons read over light photographs */
-.reel__look::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .3) 0, rgba(0, 0, 0, 0) 160px), linear-gradient(270deg, rgba(0, 0, 0, .18) 0, rgba(0, 0, 0, 0) 96px); }
-@media (min-width: 768px) {
-  .reel__media { width: auto; max-width: 100%; aspect-ratio: 4 / 5; }
-}
-
-.reel__bars { position: absolute; z-index: 3; top: 12px; left: var(--gutter); right: var(--gutter); display: flex; gap: 4px; }
-.reel__bar { flex: 1; height: 1px; background: rgba(255, 255, 255, .35); overflow: hidden; }
-.reel__fill { height: 100%; background: var(--white); transform-origin: left center; }
-.reel__fill.is-running { animation: reel-fill 6s linear forwards; }
-
-.reel__top { position: absolute; z-index: 3; top: 24px; left: var(--gutter); right: calc(var(--gutter) - 10px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.reel__logo { display: inline-flex; }
-.reel__top-actions { display: flex; align-items: center; gap: 4px; }
-.reel__icon { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 40px; height: 40px; color: var(--white); }
-.reel__icon .t-small { font-size: 11px; line-height: 1; align-self: flex-start; margin-top: 9px; }
-.reel__icon:hover { opacity: .7; }
-
-.reel__side { position: absolute; z-index: 3; right: calc(var(--gutter) - 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.reel__shared { position: absolute; right: 100%; bottom: 10px; margin-right: 8px; white-space: nowrap; animation: fade-in var(--dur) var(--ease) both; }
-
-.reel__sheet {
-  position: absolute; z-index: 4; left: 0; right: 0; bottom: 0;
-  background: var(--bg); color: var(--ink);
-  padding: 20px var(--gutter) calc(20px + env(safe-area-inset-bottom, 0px));
-}
-.reel__sheet :focus-visible { outline-color: var(--ink); }
-@media (min-width: 768px) {
-  .reel__sheet { left: 50%; right: auto; transform: translateX(-50%); width: min(calc(100vh * .8), 100%); padding: 24px 32px 28px; }
-}
-.reel__row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-.reel__name:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.reel__sizes { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-.reel__size { min-width: 44px; height: 36px; padding: 0 10px; border: 1px solid var(--hair); color: var(--ink); background: var(--bg); transition: border-color var(--dur) var(--ease); }
-.reel__size:hover:not(:disabled) { border-color: var(--rule); }
-.reel__size.is-on { border-color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.reel__size:disabled { color: var(--grey); text-decoration: line-through; cursor: not-allowed; }
-.reel__row + .btn { margin-top: 16px; }
-.reel__note { margin-top: 12px; }
-
 /* ---------- Reduced motion (§9): no autoplay, no slides, no cross-fades ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .reel__fill.is-running { animation: none !important; }
-  .reel__track { transition: none; }
-  .drop, .drop.is-fading { transition: none; animation: none; }
   .fade-in, .fade-up, .pgrid--stagger > li, .ptabs__panel, .zoom, .mega.is-open, .mmenu, .toast { animation: none !important; }
   .hero__media img { transition: none; transform: none !important; }
   .pcard__img { transition: none; }

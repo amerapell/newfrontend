@@ -14,7 +14,8 @@ import { MegaFeature } from "./MegaFeature";
 /** Main nav (§5): New In · Women · Men · Bags & Accessories · Shoes · Drop 04 (when live) · About. */
 export function useNav() {
   const { collection, settings, drop, navCategories } = useSettings();
-  const categories = NAV_CATEGORIES.map((n) => ({
+  // A category with no live products (no entry in navCategories) stays out of the menu until it has pieces.
+  const categories = NAV_CATEGORIES.filter((n) => n.slug in navCategories).map((n) => ({
     slug: n.slug,
     label: collection(n.slug)?.name ?? n.label,
     href: `/c/${n.slug}`,
@@ -205,8 +206,6 @@ export function Header() {
               <ul className="mega__col">
                 <li><Link href="/c/new-in">New In</Link></li>
                 {dropLink && <li><Link href={dropLink.href}>{dropLink.label} — {dropLink.title}</Link></li>}
-                <li><Link href="/c/sale">Last pieces</Link></li>
-                <li><Link href="/reel">Shop the reel</Link></li>
                 <li><Link href="/contact">Style advice</Link></li>
               </ul>
               <div className="mega__features">

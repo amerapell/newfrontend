@@ -64,7 +64,6 @@ export default async function LinksPage() {
           ["/c/men", "Men"],
           ["/c/bags-accessories", "Bags & Accessories"],
           ["/c/shoes", "Shoes"],
-          ["/reel", "Shop the reel"],
           ["/orders/lookup", "Track an order"],
         ].map(([href, label]) => (
           <Link key={href} href={href}>{label}</Link>

@@ -5,7 +5,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { contentApi } from "@/lib/api";
 import { apiMessage } from "@/lib/format";
 import { whatsappLink } from "@/lib/product";
-import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "./Icons";
+import { InstagramIcon, TikTokIcon } from "./Icons";
 
 function Newsletter() {
   const [email, setEmail] = useState("");
@@ -69,9 +69,6 @@ export function Footer() {
             <li>
               <a href={settings.tiktokUrl || "https://tiktok.com/"} target="_blank" rel="noopener noreferrer" aria-label="TikTok"><TikTokIcon /></a>
             </li>
-            <li>
-              <a href={whatsappLink(settings.whatsappNumber, "Hi Amerapelle, ")} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><WhatsAppIcon /></a>
-            </li>
           </ul>
         </div>
       </div>
@@ -92,17 +89,6 @@ export function Footer() {
             <li><Link href="/policies/delivery">Delivery</Link></li>
             <li><Link href="/policies/exchanges">Exchanges</Link></li>
             <li><Link href="/orders/lookup">Track an order</Link></li>
-            <li><Link href="/faq#payments">Payment</Link></li>
-          </ul>
-        </div>
-        <div className="footer__col">
-          <h2>Shop</h2>
-          <ul>
-            <li><Link href="/c/new-in">New In</Link></li>
-            <li><Link href="/c/women">Women</Link></li>
-            <li><Link href="/c/men">Men</Link></li>
-            <li><Link href="/c/bags-accessories">Bags &amp; Accessories</Link></li>
-            <li><Link href="/c/shoes">Shoes</Link></li>
           </ul>
         </div>
         <div className="footer__col">
@@ -110,14 +96,11 @@ export function Footer() {
           <ul>
             <li><Link href="/about">About</Link></li>
             <li><Link href="/faq">FAQ</Link></li>
-            <li><Link href="/policies/privacy">Privacy</Link></li>
-            <li><Link href="/policies/terms">Terms</Link></li>
           </ul>
         </div>
       </nav>
 
       <div className="footer__legal">
-        <span>Ship to: Nigeria (₦)</span>
         <span>© {year} Amerapelle, Lagos</span>
         <Link href="/policies/privacy">Privacy</Link>
         <Link href="/policies/terms">Terms</Link>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Photo } from "@/components/ui/Photo";
-import { HeroCountdown } from "./HeroCountdown";
 
 export type HeroPanelData = {
   key: string;
@@ -8,8 +7,6 @@ export type HeroPanelData = {
   linkLabel: string;
   href: string;
   image: string | null;
-  /** ISO go-live of an upcoming drop → "Opens in 02:14:32" under the title. */
-  opensAt?: string | null;
 };
 
 /**
@@ -26,7 +23,6 @@ export function HeroPanel({ panel, priority, as: Tag = "h2" }: { panel: HeroPane
       </Link>
       <div className="hero__cap">
         <Tag className="hero__title">{panel.title}</Tag>
-        {panel.opensAt && <HeroCountdown target={panel.opensAt} />}
         <Link href={panel.href} className="u-link hero__link">{panel.linkLabel}</Link>
       </div>
     </section>

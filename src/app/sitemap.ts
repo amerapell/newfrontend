@@ -7,7 +7,7 @@ export const revalidate = 3600;
 /** Built resiliently: if the API is down the static routes are still listed. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const fixed: MetadataRoute.Sitemap = ["", "/about", "/contact", "/faq", "/links", "/reel", "/policies/delivery", "/policies/exchanges", "/policies/privacy", "/policies/terms"].map((p) => ({
+  const fixed: MetadataRoute.Sitemap = ["", "/about", "/contact", "/faq", "/links", "/policies/delivery", "/policies/exchanges", "/policies/privacy", "/policies/terms"].map((p) => ({
     url: `${SITE_URL}${p}`,
     lastModified: now,
     changeFrequency: p === "" ? "daily" : "monthly",

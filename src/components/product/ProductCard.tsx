@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BookmarkIcon } from "@/components/chrome/Icons";
 import { useWishlist } from "@/context/WishlistContext";
 import { naira } from "@/lib/format";
-import { fabricOf, iconKind } from "@/lib/product";
+import { iconKind } from "@/lib/product";
 import type { ProductCard as Card } from "@/lib/types";
 import { ProductImage } from "./ProductImage";
 
@@ -92,7 +92,6 @@ export function ProductCard({
   const imgSizes = sizes ?? (featured ? FEATURED_SIZES : CARD_SIZES);
   const bars = p.colours.slice(0, MAX_BARS);
   const more = p.colours.length - bars.length;
-  const material = fabricOf(p.material);
 
   return (
     <article className={`pcard pcard--${variant} ${className}`}>
@@ -104,7 +103,6 @@ export function ProductCard({
         </span>
         <span className="pcard__cap">
           <span className="pcard__name">{p.name}</span>
-          {material && <span className="pcard__mat">{material}</span>}
           <PriceLine priceKobo={p.priceKobo} compareAtKobo={p.compareAtKobo} className="pcard__price" />
           {bars.length > 1 && (
             <span className="pcard__bars">

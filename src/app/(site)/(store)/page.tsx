@@ -4,11 +4,10 @@ import { realImage } from "@/components/ui/Photo";
 import { ServiceCards, StoryPanel } from "@/components/home/HomeSections";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
 import { catalogApi, safe } from "@/lib/api";
-import { dropPhase, dropTitle } from "@/lib/drop";
 import { SITE_URL } from "@/lib/env";
 import { homePanels } from "@/lib/nav";
 import { getCollections, getSettings } from "@/lib/server-data";
-import type { Collection, StoreSettings } from "@/lib/types";
+import type { Collection } from "@/lib/types";
 
 export const revalidate = 60;
 
@@ -18,30 +17,15 @@ export const metadata: Metadata = {
   alternates: { canonical: SITE_URL },
 };
 
-function toPanel(c: Collection, settings: StoreSettings): HeroPanelData {
-  const isDrop = c.slug === settings.drop?.collectionSlug;
-  if (isDrop && settings.drop) {
-    const { phase } = dropPhase(settings.drop);
-    const label = c.name.split(/\s+[—/]\s+/)[0];
-    return {
-      key: c.slug,
-      title: `${label} — ${dropTitle(label, settings.drop.title)}`,
-      linkLabel: c.tagline || "Discover the drop",
-      href: `/drop/${c.slug}`,
-      image: realImage(c.heroImageUrl),
-      opensAt: phase === "upcoming" ? settings.drop.goLiveAt : null,
-    };
-  }
+function toPanel(c: Collection): HeroPanelData {
   return { key: c.slug, title: c.name, linkLabel: c.tagline || "Discover the collection", href: `/c/${c.slug}`, image: realImage(c.heroImageUrl) };
 }
 
 export default async function HomePage() {
   const [settings, collections] = await Promise.all([getSettings(), getCollections()]);
-  const phase = dropPhase(settings.drop).phase;
-  const dropSlug = phase === "live" || phase === "upcoming" ? settings.drop?.collectionSlug : null;
   // Only panels with a photo are shown — a collection without one stays off the home page until the admin adds it.
-  const panels = homePanels(collections, dropSlug)
-    .map((c) => toPanel(c, settings))
+  const panels = homePanels(collections, null)
+    .map((c) => toPanel(c))
     .filter((p) => p.image);
   const newIn = await safe(
     catalogApi.collection("new-in", { pageSize: 12, sort: "newest" }).then((r) => r.products.items),

@@ -27,12 +27,6 @@ function useMutate() {
 
 const koboIn = (v: string) => (v ? Math.round(Number(v.replace(/[^\d.]/g, "")) * 100) : 0);
 const nairaIn = (k: number | null | undefined) => (k ? String(k / 100) : "");
-/** ISO instant → `<input type="datetime-local">` value in the admin's own time zone (the input is local time). */
-const localInput = (iso: string | null | undefined) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-};
 
 /* ---------------- Exchanges ---------------- */
 
@@ -52,7 +46,7 @@ export function ExchangesAdmin() {
   };
   return (
     <>
-      <AdminHead index={`Exchanges · ${data?.length ?? "…"}`} title={<>Exchange <em>requests</em></>} />
+      <AdminHead title={`Exchanges${data ? ` (${data.length})` : ""}`} />
       <div className="admin-filters">
         <select className="admin-input" value={status} onChange={(e) => router.replace(`/admin/exchanges${e.target.value ? `?status=${e.target.value}` : ""}`)} aria-label="Status">
           <option value="">All statuses</option>
@@ -201,14 +195,14 @@ export function CollectionsAdmin() {
   };
   return (
     <>
-      <AdminHead index="Collections" title="Collections & drops" actions={<button className="btn btn--primary" onClick={() => setEditing({ name: "", slug: "", description: "", isDrop: false, goLiveAt: null, heroImageUrl: null, homeOrder: null, tagline: null })}>New collection</button>} />
+      <AdminHead title="Collections" actions={<button className="btn btn--primary" onClick={() => setEditing({ name: "", slug: "", description: "", isDrop: false, goLiveAt: null, heroImageUrl: null, homeOrder: null, tagline: null })}>New collection</button>} />
       {editing && (
         <section className="admin-card">
           <div className="field-grid field-grid--200">
             <FieldBox label="Name" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
             <FieldBox label="Slug" value={editing.slug ?? ""} placeholder={slugify(editing.name ?? "")} onChange={(e) => setEditing({ ...editing, slug: slugify(e.target.value) })} />
             <FieldBox
-              label="Home order · empty = not on the home page"
+              label="Home page position · empty = hidden"
               inputMode="numeric"
               value={editing.homeOrder != null ? String(editing.homeOrder) : ""}
               onChange={(e) => {
@@ -216,17 +210,15 @@ export function CollectionsAdmin() {
                 setEditing({ ...editing, homeOrder: v === "" ? null : Number(v) });
               }}
             />
-            <FieldBox label="Hero link label · default “Discover the collection”" value={editing.tagline ?? ""} maxLength={80} onChange={(e) => setEditing({ ...editing, tagline: e.target.value })} />
-            <FieldBox label="Go live at · drops" type="datetime-local" value={localInput(editing.goLiveAt)} onChange={(e) => setEditing({ ...editing, goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+            <FieldBox label="Banner link text · default “Discover the collection”" value={editing.tagline ?? ""} maxLength={80} onChange={(e) => setEditing({ ...editing, tagline: e.target.value })} />
             <TextAreaBox full label="Description" rows={2} value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
           </div>
           <HeroImageField value={editing.heroImageUrl} onChange={(url) => setEditing({ ...editing, heroImageUrl: url })} />
-          <CheckRow checked={!!editing.isDrop} onChange={(v) => setEditing({ ...editing, isDrop: v })} id="isdrop" sub="Scheduled; goes live at the time above, with a countdown. A live or upcoming drop is always the first home panel.">This is a drop</CheckRow>
           <div className="row gap-16"><button className="btn btn--primary" onClick={save}>Save</button><button className="u-link" onClick={() => setEditing(null)}>Cancel</button></div>
         </section>
       )}
       <table className="admin-table">
-        <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th className="num">Home</th><th>Drop</th><th /></tr></thead>
+        <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th className="num">Home</th><th /></tr></thead>
         <tbody>
           {data?.map((c) => (
             <tr key={c.id}>
@@ -234,7 +226,6 @@ export function CollectionsAdmin() {
               <td className="t-grey">/c/{c.slug}</td>
               <td className="num tnum">{c.productCount ?? c.count}</td>
               <td className="num tnum">{c.homeOrder ?? "—"}</td>
-              <td className="t-grey">{c.isDrop ? `Live ${c.goLiveAt ? longDate(c.goLiveAt) : "—"}` : ""}</td>
               <td className="num">
                 <button className="u-link" onClick={() => setEditing(c)}>Edit</button>{" "}
                 <button className="u-link t-grey" onClick={async () => { if (confirm(`Delete ${c.name}? Products stay.`) && (await mutate(() => adminApi.deleteCollection(c.id), "Deleted.")) !== null) setData(data.filter((x) => x.id !== c.id)); }}>Delete</button>
@@ -266,7 +257,7 @@ export function DiscountsAdmin() {
   };
   return (
     <>
-      <AdminHead index="Discounts" title={<>Promo <em>codes</em></>} />
+      <AdminHead title="Promo codes" />
       <section className="admin-card">
         <div className="mono-label admin-card__head">{editing ? `Edit ${d.code || "code"}` : "New code"}</div>
         <form
@@ -342,7 +333,7 @@ export function ZonesAdmin() {
   const [draft, setDraft] = useState<Record<string, Partial<DeliveryZone>>>({});
   return (
     <>
-      <AdminHead index="Delivery zones" title={<>Delivery &amp; <em>fees</em></>} />
+      <AdminHead title="Delivery zones" />
       <table className="admin-table">
         <thead><tr><th>Zone</th><th>Name</th><th>ETA text</th><th className="num">Fee ₦</th><th>Active</th><th /></tr></thead>
         <tbody>
@@ -434,17 +425,15 @@ export function SettingsAdmin() {
   }, [data]);
   if (!s) return <p className="mono-label">Loading…</p>;
   const set = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) => setS({ ...s, [k]: v });
-  const drop = s.drop ?? { title: "", collectionSlug: "", goLiveAt: null, firstRunTotal: 0, firstRunLeft: 0 };
-  const setDrop = (p: Partial<typeof drop>) => set("drop", { ...drop, ...p });
   return (
     <>
-      <AdminHead index="Settings" title={<>Store <em>settings</em></>} actions={<button className="btn btn--short" onClick={() => mutate(() => adminApi.updateSettings(s), "Settings saved.")}>Save settings</button>} />
+      <AdminHead title="Settings" actions={<button className="btn btn--short" onClick={() => mutate(() => adminApi.updateSettings(s), "Settings saved.")}>Save settings</button>} />
       <div className="admin-form">
         <TotpSetupCard />
         <section className="admin-card">
           <div className="mono-label admin-card__head">Payments</div>
-          <CheckRow checked={s.paystackEnabled} onChange={(v) => set("paystackEnabled", v)} id="ps" sub="Naira card · bank transfer · ussd">Paystack enabled</CheckRow>
-          <CheckRow checked={s.bachsEnabled} onChange={(v) => set("bachsEnabled", v)} id="bx" sub="Foreign cards · transfer · USDT/USDC · settles in naira">Bachs enabled</CheckRow>
+          <CheckRow checked={s.paystackEnabled} onChange={(v) => set("paystackEnabled", v)} id="ps" sub="Cards, transfer, USSD">Paystack</CheckRow>
+          <CheckRow checked={s.bachsEnabled} onChange={(v) => set("bachsEnabled", v)} id="bx" sub="Foreign cards, crypto">Bachs</CheckRow>
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Delivery, exchanges &amp; credit</div>
@@ -468,7 +457,7 @@ export function SettingsAdmin() {
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Home · &ldquo;Amerapelle at your service&rdquo; photos</div>
-          <p className="t-small t-grey">Landscape photos (3 : 2). Without a photo the card shows a plain ground with an icon.</p>
+          <p className="t-small t-grey">Landscape photos. A card without a photo shows text only.</p>
           <div className="field-grid field-grid--200">
             {([
               ["stylist", "Style advice on WhatsApp"],
@@ -486,21 +475,8 @@ export function SettingsAdmin() {
           </div>
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">Ticker · one message per line</div>
-          <TextAreaBox label="Ticker text" rows={5} value={s.tickerText.join("\n")} onChange={(e) => set("tickerText", e.target.value.split("\n"))} />
-        </section>
-        <section className="admin-card">
-          <div className="mono-label admin-card__head">Drop / banner</div>
-          <CheckRow checked={!!s.drop} onChange={(v) => set("drop", v ? drop : null)} id="hasdrop" sub="Shows the home hero countdown and nav link">Feature a drop</CheckRow>
-          {s.drop && (
-            <div className="field-grid field-grid--200">
-              <FieldBox label="Title · e.g. The Night Edit" value={drop.title} onChange={(e) => setDrop({ title: e.target.value })} />
-              <FieldBox label="Collection slug" value={drop.collectionSlug} onChange={(e) => setDrop({ collectionSlug: slugify(e.target.value) })} />
-              <FieldBox label="Goes live" type="datetime-local" value={localInput(drop.goLiveAt)} onChange={(e) => setDrop({ goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-              <FieldBox label="First run · total" inputMode="numeric" value={String(drop.firstRunTotal)} onChange={(e) => setDrop({ firstRunTotal: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
-              <FieldBox label="First run · left" inputMode="numeric" value={String(drop.firstRunLeft)} onChange={(e) => setDrop({ firstRunLeft: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
-            </div>
-          )}
+          <div className="mono-label admin-card__head">Top bar</div>
+          <FieldBox full label="Message · empty = no top bar" maxLength={80} value={s.tickerText[0] ?? ""} onChange={(e) => set("tickerText", e.target.value ? [e.target.value] : [])} />
         </section>
       </div>
     </>
@@ -524,7 +500,7 @@ export function FaqAdmin() {
   };
   return (
     <>
-      <AdminHead index="FAQ" title={<>Questions, <em>answered</em></>} actions={<button className="btn btn--short" onClick={() => setEdit({ group: "Orders", question: "", answer: "" })}>Add question +</button>} />
+      <AdminHead title="FAQ" actions={<button className="btn btn--short" onClick={() => setEdit({ group: "Orders", question: "", answer: "" })}>Add question +</button>} />
       {edit && (
         <section className="admin-card">
           <div className="field-grid field-grid--200">
@@ -575,7 +551,7 @@ export function PagesAdmin() {
   useEffect(() => setP(data), [data]);
   return (
     <>
-      <AdminHead index="Pages" title={<>Content <em>pages</em></>} actions={p && <button className="btn btn--short" onClick={async () => { const r = await mutate(() => adminApi.updatePage(slug, { title: p.title, bodyMarkdown: p.bodyMarkdown }), "Page saved."); if (r) setP(r); }}>Save page</button>} />
+      <AdminHead title="Pages" actions={p && <button className="btn btn--short" onClick={async () => { const r = await mutate(() => adminApi.updatePage(slug, { title: p.title, bodyMarkdown: p.bodyMarkdown }), "Page saved."); if (r) setP(r); }}>Save page</button>} />
       <div className="chip-row">
         {slugs.map((s) => (
           <button key={s} className={`chip${s === slug ? " chip--on" : ""}`} onClick={() => setSlug(s)}>{s}</button>

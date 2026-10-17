@@ -32,8 +32,10 @@ export const getNavCategories = cache(async (): Promise<NavCategories> => {
   const entries = await Promise.all(
     NAV_CATEGORIES.map(async (n) => {
       const page = await safe(catalogApi.collection(n.slug, { pageSize: 96 }), null);
+      // null = API unreachable → keep the category; [] products → leave it out of the menu.
+      if (page && page.products.items.length === 0) return null;
       return [n.slug, page ? subcategoriesOf(page.products.items) : []] as const;
     }),
   );
-  return Object.fromEntries(entries);
+  return Object.fromEntries(entries.filter((e): e is NonNullable<typeof e> => e !== null));
 });
