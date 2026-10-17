@@ -6,12 +6,8 @@ import { readUtm } from "@/lib/utm";
 import type { Cart, CartLine } from "@/lib/types";
 import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
-import { flyStarToBag, prefersReducedMotion, isMobileViewport } from "@/lib/motion";
-
 type AddOptions = {
-  /** Element the star flies from (the Add button) */
-  origin?: HTMLElement | null;
-  /** Skip the drawer (reel, quick add on mobile …) */
+  /** Skip the drawer (reel …) */
   silent?: boolean;
   label?: string;
 };
@@ -135,17 +131,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     async (variantId, quantity = 1, opts = {}) => {
       setBusy(true);
       try {
-        const flight = opts.origin && !isMobileViewport() && !prefersReducedMotion() ? flyStarToBag(opts.origin) : Promise.resolve();
-        const [c] = await Promise.all([withCart(() => cartApi.addLine(variantId, quantity)), flight]);
+        const c = await withCart(() => cartApi.addLine(variantId, quantity));
         accept(c);
         const line = c.lines.find((l) => l.variantId === variantId) ?? null;
         setLastAdded(line);
         setBumpKey((k) => k + 1);
-        if (isMobileViewport() || opts.silent) {
-          if (!opts.silent) toast.show({ message: `Added · ${line?.name ?? opts.label ?? "to your bag"}${line?.size ? `, ${line.size}` : ""}`, action: { label: "View bag", href: "/bag" } });
-        } else {
-          setDrawerOpen(true);
-        }
+        // §7 Bag drawer opens on add-to-bag (all viewports); silent adds (reel) show their own confirmation.
+        if (!opts.silent) setDrawerOpen(true);
         return true;
       } catch (e) {
         toast.show({ message: apiMessage(e, "We couldn't add that. Please try again."), tone: "error" });

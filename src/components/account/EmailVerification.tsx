@@ -49,42 +49,30 @@ export function useResendVerification() {
   return { resend, busy, left, disabled: busy || left > 0, label: busy ? "Sending…" : left > 0 ? `Resend in ${left}s` : "Resend email" };
 }
 
-/** Slim bar across the top of account pages while the email is unconfirmed. */
+/** Notice under the account title while the email is unconfirmed. */
 export function VerifyNoticeBar() {
   const r = useResendVerification();
   return (
-    <div className="verify-bar" role="region" aria-label="Confirm your email">
-      <div className="container verify-bar__inner">
-        <p className="verify-bar__text">
-          <span className="mono-label verify-bar__label">Action needed</span>
-          <span>{VERIFY_NOTICE}</span>
-        </p>
-        <button type="button" className="btn btn--ghost verify-bar__btn" onClick={r.resend} disabled={r.disabled}>
-          {r.label}
-        </button>
-      </div>
+    <div className="cm-notice" role="region" aria-label="Confirm your email">
+      <p>{VERIFY_NOTICE}</p>
+      <button type="button" className="btn btn--secondary cm-notice__btn" onClick={r.resend} disabled={r.disabled}>
+        {r.label}
+      </button>
     </div>
   );
 }
 
-/** Replaces the exchange-credit card for unverified accounts: no balance is shown until the email is confirmed. */
+/** Replaces the credit balance for unverified accounts: no balance is shown until the email is confirmed. */
 export function CreditLocked() {
   const r = useResendVerification();
   return (
-    <div className="credit-locked">
-      <div className="credit-locked__top">
-        <span className="mono-label">EXCHANGE CREDIT</span>
-        <span className="mono-label credit-locked__state">LOCKED</span>
-      </div>
-      <div className="credit-locked__bottom">
-        <div className="serif credit-locked__title">
-          Confirm your <em>email</em>
-        </div>
-        <p className="credit-locked__copy">{VERIFY_NOTICE}</p>
-        <button type="button" className="ap-link small-link credit-locked__btn" onClick={r.resend} disabled={r.disabled}>
-          {r.label}
-        </button>
-      </div>
+    <div className="cm-block cm-credit">
+      <p className="cm-credit__label">Exchange credit</p>
+      <p>Confirm your email to see and use your credit.</p>
+      <p className="cm-soft">{VERIFY_NOTICE}</p>
+      <button type="button" className="cm-textbtn cm-textbtn--ink" onClick={r.resend} disabled={r.disabled}>
+        {r.label}
+      </button>
     </div>
   );
 }
@@ -124,48 +112,37 @@ export function VerifyEmailView({ token, onVerified }: { token: string; onVerifi
 
   const resend = useResendVerification();
   const canResend = phase === "failed" && status === "authed" && user && !user.emailVerified;
+  const toAccount = () => router.replace("/account");
 
   return (
-    <div className="container verify">
-      <div className="verify__body" aria-live="polite" aria-busy={phase === "checking"}>
+    <div className="cm cm-page cm-narrow">
+      <div className="cm-stack" aria-live="polite" aria-busy={phase === "checking"}>
         {phase === "checking" && (
           <>
-            <div className="mono-label">ACCOUNT · CONFIRMING</div>
-            <h1 className="serif verify__title">
-              One <em>moment.</em>
-            </h1>
-            <p className="body-copy">Confirming your email address…</p>
+            <h1 className="cm-title">Confirming your email…</h1>
+            <p className="cm-soft">One moment.</p>
           </>
         )}
         {phase === "done" && (
           <>
-            <div className="mono-label">ACCOUNT · EMAIL CONFIRMED</div>
-            <h1 className="serif verify__title">
-              You&apos;re <em>confirmed.</em>
-            </h1>
-            <p className="body-copy">Your exchange credit and past orders are now linked to your account.</p>
-            <button type="button" className="btn btn--block verify__cta" onClick={() => router.replace("/account")}>
-              <span>{status === "authed" ? "Continue to account" : "Sign in to continue"}</span>
-              <span aria-hidden>→</span>
+            <h1 className="cm-title">Your email is confirmed.</h1>
+            <p>Your exchange credit and past orders are now linked to your account.</p>
+            <button type="button" className="btn btn--primary btn--block" onClick={toAccount}>
+              {status === "authed" ? "Continue to account" : "Sign in to continue"}
             </button>
           </>
         )}
         {phase === "failed" && (
           <>
-            <div className="mono-label">ACCOUNT · LINK EXPIRED</div>
-            <h1 className="serif verify__title">
-              Link <em>expired.</em>
-            </h1>
-            <p className="body-copy">{error ?? "This link is invalid or has expired"}. Links are valid for 24 hours and can be used once.</p>
+            <h1 className="cm-title">This link has expired.</h1>
+            <p>{error ?? "This link is invalid or has expired"}. Links are valid for 24 hours and can be used once.</p>
             {canResend ? (
-              <button type="button" className="btn btn--block verify__cta" onClick={resend.resend} disabled={resend.disabled}>
-                <span>{resend.left > 0 ? resend.label : "Send a new link"}</span>
-                <span aria-hidden>→</span>
+              <button type="button" className="btn btn--primary btn--block" onClick={resend.resend} disabled={resend.disabled}>
+                {resend.left > 0 ? resend.label : "Send a new link"}
               </button>
             ) : (
-              <button type="button" className="btn btn--block verify__cta" onClick={() => router.replace("/account")}>
-                <span>{status === "authed" ? "Continue to account" : "Sign in"}</span>
-                <span aria-hidden>→</span>
+              <button type="button" className="btn btn--primary btn--block" onClick={toAccount}>
+                {status === "authed" ? "Continue to account" : "Sign in"}
               </button>
             )}
           </>

@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Account", robots: { index: false, fo
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="container empty empty--page"><span className="mono-label">LOADING…</span></div>}>
+    <Suspense fallback={<div className="cm cm-page"><p className="cm-soft">Loading…</p></div>}>
       <AccountShell>{children}</AccountShell>
     </Suspense>
   );

@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductView } from "@/components/product/ProductView";
-import { LookCard, ProductCard } from "@/components/product/ProductCard";
+import { ProductTabs } from "@/components/product/ProductTabs";
+import { ProductCarousel } from "@/components/product/ProductCarousel";
+import { ProductImage } from "@/components/product/ProductImage";
+import { ServiceBand } from "@/components/product/ServiceBand";
 import { catalogApi, safe, ApiError } from "@/lib/api";
 import { SITE_URL } from "@/lib/env";
-import { italicWord } from "@/lib/format";
+import { getSettings } from "@/lib/server-data";
 import type { Product, ProductCard as Card } from "@/lib/types";
 
 export const revalidate = 60;
@@ -88,59 +91,48 @@ export default async function ProductPage({ params }: Props) {
   } catch {
     // API unreachable — don't cache a 404 for a real product
     return (
-      <div className="container empty empty--page">
-        <span className="serif empty__title">One moment<em>…</em></span>
-        <p className="body-copy">We couldn&apos;t load this piece right now. Please refresh in a moment.</p>
-        <Link href="/" className="ap-link">Back to the index →</Link>
+      <div className="container page-msg">
+        <h1 className="t-display">One moment.</h1>
+        <p>We couldn&apos;t load this piece right now. Please refresh in a moment.</p>
+        <Link href="/" className="u-link">Back to the home page</Link>
       </div>
     );
   }
   if (!p) notFound();
 
-  const [zones, alsoLike] = await Promise.all([
+  const [zones, settings, alsoLike] = await Promise.all([
     safe(catalogApi.zones(), []),
+    getSettings(),
     (async (): Promise<Card[]> => {
       const col = p!.collections.find((c) => !["new-in", "sale"].includes(c.slug)) ?? p!.collections[0];
       if (!col) return [];
-      const r = await safe(catalogApi.collection(col.slug, { pageSize: 12 }), null);
+      const r = await safe(catalogApi.collection(col.slug, { pageSize: 16 }), null);
       const exclude = new Set([p!.id, ...p!.related.map((x) => x.id)]);
-      return (r?.products.items ?? []).filter((x) => !exclude.has(x.id)).slice(0, 4);
+      return (r?.products.items ?? []).filter((x) => !exclude.has(x.id)).slice(0, 8);
     })(),
   ]);
-  const [a, b, c] = italicWord("Complete the look");
+  const activeZones = zones.filter((z) => z.active);
+  const details = p.images.slice(2, 4).filter((i) => i.url);
 
   return (
     <>
-      <ProductView product={p} zones={zones} />
-      {p.related.length > 0 && (
-        <section className="container pdp-section" aria-labelledby="look-title">
-          <div className="section-head section-head--ink">
-            <h2 id="look-title" className="serif section-head__title pdp-section__title">
-              {a.trim()} <em>{[b, c.trim()].join(" ").trim()}</em>
-            </h2>
-            <span className="mono-label hide-mobile">STYLED WITH {p.number.toUpperCase()}</span>
-          </div>
-          <div className="look-grid">
-            {p.related.slice(0, 4).map((r) => (
-              <LookCard key={r.id} product={r} />
+      <ProductView product={p} zones={activeZones} />
+      <ProductTabs product={p} zones={activeZones} />
+      {details.length > 0 && (
+        <section className="pdp-details" aria-labelledby="details-title">
+          <h2 id="details-title" className="t-title container">Details</h2>
+          <div className={`pdp-details__imgs pdp-details__imgs--${details.length}`}>
+            {details.map((img) => (
+              <div key={img.url} className="pdp-details__img">
+                <ProductImage src={img.url} alt={img.alt || p!.name} sizes="(max-width: 1023px) 100vw, 50vw" />
+              </div>
             ))}
           </div>
         </section>
       )}
-      {alsoLike.length > 0 && (
-        <section className="container pdp-section pdp-section--tight" aria-labelledby="like-title">
-          <div className="section-head section-head--hair">
-            <h2 id="like-title" className="serif section-head__title pdp-section__title">
-              You may <em>also like</em>
-            </h2>
-          </div>
-          <div className="product-grid product-grid--fill">
-            {alsoLike.map((r) => (
-              <ProductCard key={r.id} product={r} />
-            ))}
-          </div>
-        </section>
-      )}
+      <ServiceBand exchangeDays={settings.exchangeWindowDays} />
+      <ProductCarousel title="Complete the look" products={p.related.slice(0, 8)} />
+      <ProductCarousel title="You may also like" products={alsoLike} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(p)).replace(/</g, "\\u003c") }} />
     </>
   );

@@ -1,39 +1,32 @@
 import Link from "next/link";
 import { Providers } from "@/context/Providers";
-import { getCollections, getSettings } from "@/lib/server-data";
-import { Ticker } from "@/components/chrome/Ticker";
+import { getCollections, getNavCategories, getSettings } from "@/lib/server-data";
+import { PromoBar } from "@/components/chrome/PromoBar";
 import { Header } from "@/components/chrome/Header";
 import { Footer } from "@/components/chrome/Footer";
-import { CutPaperCollage } from "@/components/patterns/Patterns";
-import { SearchOverlay } from "@/components/chrome/SearchOverlay";
+import { SearchDrawer } from "@/components/chrome/SearchDrawer";
 import { MobileMenu } from "@/components/chrome/MobileMenu";
+import { BagDrawer } from "@/components/cart/BagDrawer";
 
 export default async function NotFound() {
-  const [settings, collections] = await Promise.all([getSettings(), getCollections()]);
+  const [settings, collections, navCategories] = await Promise.all([getSettings(), getCollections(), getNavCategories()]);
   return (
-    <Providers settings={settings} collections={collections}>
-      <Ticker />
+    <Providers settings={settings} collections={collections} navCategories={navCategories}>
+      <PromoBar />
       <Header />
-      <main id="main" tabIndex={-1} className="container nf">
-        <div className="nf__art" aria-hidden>
-          <CutPaperCollage />
-        </div>
-        <div className="nf__copy">
-          <div className="mono-label">404 — NOT FOUND</div>
-          <h1 className="serif nf__title">
-            This piece has <em className="navy-em">sold out</em>
-            <span className="red">.</span>
-          </h1>
-          <p className="body-copy">Or it never existed. Either way, there&apos;s plenty more in the store.</p>
-          <div className="row gap-24 wrap">
-            <Link href="/" className="btn btn--short">Back to the index <span aria-hidden>→</span></Link>
-            <Link href="/c/new-in" className="ap-link">Shop new in</Link>
-          </div>
+      <main id="main" tabIndex={-1} className="nf container">
+        <p className="t-small t-grey">Error 404</p>
+        <h1 className="t-display">This page can&apos;t be found.</h1>
+        <p>The piece may have sold out, or the link may be wrong. There&apos;s plenty more in the store.</p>
+        <div className="nf__links">
+          <Link href="/c/new-in" className="btn btn--primary">Discover New In</Link>
+          <Link href="/" className="u-link">Back to the home page</Link>
         </div>
       </main>
-      <Footer variant="compact" />
-      <SearchOverlay />
+      <Footer />
+      <SearchDrawer />
       <MobileMenu />
+      <BagDrawer />
     </Providers>
   );
 }

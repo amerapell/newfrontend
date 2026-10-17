@@ -34,7 +34,7 @@ export function AdminLogin() {
   return (
     <div className="admin-login">
       <div className="admin-login__mark"><Logo variant="stacked" size={88} /></div>
-      <div className="mono-label">ADMIN · {step === "password" ? "STEP 1 OF 2" : "STEP 2 OF 2 · TWO-STEP VERIFICATION"}</div>
+      <div className="mono-label">Admin · {step === "password" ? "Step 1 of 2" : "Step 2 of 2 · two-step verification"}</div>
       {step === "password" ? (
         <form
           className="stack gap-12"
@@ -56,8 +56,8 @@ export function AdminLogin() {
             }
           }}
         >
-          <FieldBox label="EMAIL" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <FieldBox label="PASSWORD" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <FieldBox label="Email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <FieldBox label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           {err && <p className="form-error" role="alert">{err}</p>}
           <button className="btn btn--block" disabled={busy}><span>{busy ? "Checking…" : "Continue"}</span><span aria-hidden>→</span></button>
         </form>
@@ -79,7 +79,7 @@ export function AdminLogin() {
           }}
         >
           <p className="body-copy">Enter the 6-digit code from your authenticator app.</p>
-          <FieldBox label="CODE" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} required data-autofocus />
+          <FieldBox label="Code" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} required data-autofocus />
           {err && <p className="form-error" role="alert">{err}</p>}
           <button className="btn btn--block" disabled={busy}><span>{busy ? "Verifying…" : "Verify"}</span><span aria-hidden>→</span></button>
           <button type="button" className="ap-link small-link" onClick={() => { setStep("password"); setCode(""); setErr(null); }}>← Back</button>

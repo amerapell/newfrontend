@@ -1,72 +1,73 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { StepIndicator } from "@/components/chrome/CheckoutHeader";
-import { QtyStepper } from "@/components/ui/QtyStepper";
-import { ProductImage } from "@/components/product/ProductImage";
+import { useEffect, useId, useState } from "react";
 import { loadProduct } from "@/components/product/quickAddCache";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { naira, upper } from "@/lib/format";
-import { iconKind } from "@/lib/product";
-import type { CartLine, Product } from "@/lib/types";
+import { naira, plural } from "@/lib/format";
+import type { CartLine, Product, ProductCard } from "@/lib/types";
+import { ProductCarousel } from "@/components/product/ProductCarousel";
+import { BagLine } from "./BagLine";
 import { CreditToggle, useCreditSource } from "./CreditToggle";
-import { FreeDeliveryBar } from "./FreeDeliveryBar";
 import { PromoForm } from "./PromoForm";
 
+/** Change colour / size of a line in place (underline selects). */
 function VariantEditor({ line, onDone }: { line: CartLine; onDone: () => void }) {
   const { update, busy } = useCart();
+  const id = useId();
   const [p, setP] = useState<Product | null>(null);
   const [colour, setColour] = useState(line.colour);
   const [size, setSize] = useState(line.size);
   useEffect(() => {
     loadProduct(line.productSlug).then(setP).catch(() => onDone());
   }, [line.productSlug, onDone]);
-  if (!p) return <span className="mono-xs">LOADING OPTIONS…</span>;
+  if (!p) return <p className="cm-soft" aria-busy="true">Loading options…</p>;
   const pick = p.variants.find((v) => v.colour === colour && v.size === size);
   return (
-    <div className="variant-editor">
+    <div className="cm-variant">
       {p.options.colours.length > 1 && (
-        <label className="mini-select">
-          <span className="mono-xs">COLOUR</span>
-          <select value={colour ?? ""} onChange={(e) => setColour(e.target.value)}>
+        <div className="cm-select">
+          <label htmlFor={`${id}-c`} className="cm-label">Colour</label>
+          <select id={`${id}-c`} value={colour ?? ""} onChange={(e) => setColour(e.target.value)}>
             {p.options.colours.map((c) => (
               <option key={c.name} value={c.name} disabled={!p.variants.some((v) => v.colour === c.name && v.available > 0)}>{c.name}</option>
             ))}
           </select>
-        </label>
+        </div>
       )}
       {p.options.sizes.length > 0 && (
-        <label className="mini-select">
-          <span className="mono-xs">SIZE</span>
-          <select value={size ?? ""} onChange={(e) => setSize(e.target.value)}>
+        <div className="cm-select">
+          <label htmlFor={`${id}-s`} className="cm-label">Size</label>
+          <select id={`${id}-s`} value={size ?? ""} onChange={(e) => setSize(e.target.value)}>
             {p.options.sizes.map((s) => {
               const v = p.variants.find((x) => x.colour === colour && x.size === s);
               return <option key={s} value={s} disabled={!v || v.available <= 0}>{s}{!v || v.available <= 0 ? " — sold out" : ""}</option>;
             })}
           </select>
-        </label>
+        </div>
       )}
-      <button
-        type="button"
-        className="btn btn--ghost"
-        disabled={busy || !pick || pick.available <= 0}
-        onClick={async () => {
-          if (pick && pick.id !== line.variantId) await update(line.id, { variantId: pick.id });
-          onDone();
-        }}
-      >
-        Update
-      </button>
-      <button type="button" className="ap-link small-link" onClick={onDone}>Cancel</button>
+      <div className="cm-variant__actions">
+        <button
+          type="button"
+          className="u-link"
+          disabled={busy || !pick || pick.available <= 0}
+          onClick={async () => {
+            if (pick && pick.id !== line.variantId) await update(line.id, { variantId: pick.id });
+            onDone();
+          }}
+        >
+          Update
+        </button>
+        <button type="button" className="u-link cm-soft" onClick={onDone}>Cancel</button>
+      </div>
     </div>
   );
 }
 
-export function BagView() {
+export function BagView({ alsoLike = [] }: { alsoLike?: ProductCard[] }) {
   const { cart, ready, update, remove, busy, useCredit, setUseCredit } = useCart();
   const { user, status } = useAuth();
   const { settings } = useSettings();
@@ -81,7 +82,8 @@ export function BagView() {
   const applied = useCredit && credit > 0 ? Math.min(credit, afterDisc) : 0;
   const total = Math.max(0, afterDisc - applied);
   const soldOut = lines.filter((l) => l.problem === "SOLD_OUT");
-  const providers = [settings.paystackEnabled && "PAYSTACK", settings.bachsEnabled && "BACHS"].filter(Boolean).join(" · ");
+  const threshold = cart?.freeDeliveryThresholdKobo ?? settings.freeDeliveryThresholdKobo;
+  const blocked = !lines.length || soldOut.length > 0;
 
   const saveForLater = async (l: CartLine) => {
     if (status !== "authed") {
@@ -94,88 +96,84 @@ export function BagView() {
   };
 
   return (
-    <div className="container bag">
-      <StepIndicator step={1} />
-      <div className="split">
-        <section className="split__main" aria-labelledby="bag-title">
-          <div className="bag__head">
-            <h1 id="bag-title" className="serif bag__title">
-              Your <em>bag</em>
-            </h1>
-            <span className="mono-label">{n} {n === 1 ? "PIECE" : "PIECES"}</span>
-          </div>
-          {soldOut.length > 0 && (
-            <div className="notice notice--red" role="alert">
-              {soldOut.length === 1 ? `${soldOut[0].name} has sold out.` : `${soldOut.length} pieces have sold out.`} Remove {soldOut.length === 1 ? "it" : "them"} to continue to checkout.
-            </div>
-          )}
-          {!ready && <div className="bag-line bag-line--loading" aria-busy="true"><span className="mono-xs">LOADING YOUR BAG…</span></div>}
-          {lines.map((l) => (
-            <div key={l.id} className={`bag-line${l.problem === "SOLD_OUT" ? " is-out" : ""}`}>
-              <Link href={`/p/${l.productSlug}`} className="bag-line__img">
-                <ProductImage src={l.imageUrl} alt={l.name} kind={iconKind({ material: l.material, name: l.name })} iconSize={40} sizes="132px" />
-                <span className="bag-line__no">{l.number}</span>
-              </Link>
-              <div className="bag-line__info">
-                <Link href={`/p/${l.productSlug}`} className="serif bag-line__name">{l.name}</Link>
-                <span className="meta">{[l.colour, l.size, l.material].filter(Boolean).map(upper).join(" · ")}</span>
-                {l.problem === "SOLD_OUT" && <span className="mono-xs red">● SOLD OUT — REMOVE TO CONTINUE</span>}
-                {l.problem === "LOW_STOCK" && <span className="mono-xs red">● ONLY {l.available} LEFT — QUANTITY REDUCED AT CHECKOUT</span>}
-                {editing === l.id ? (
-                  <VariantEditor line={l} onDone={() => setEditing(null)} />
-                ) : (
-                  <div className="bag-line__actions">
-                    <QtyStepper value={l.quantity} max={Math.max(1, l.available)} disabled={busy || l.problem === "SOLD_OUT"} onChange={(q) => update(l.id, { quantity: q })} />
-                    <button type="button" className="ap-link small-link muted" onClick={() => remove(l.id)}>Remove</button>
-                    {(l.colour || l.size) && <button type="button" className="ap-link small-link muted" onClick={() => setEditing(l.id)}>Change</button>}
-                    <button type="button" className="ap-link small-link muted" onClick={() => saveForLater(l)}>Save for later</button>
-                  </div>
-                )}
-              </div>
-              <span className="bag-line__total tnum">{naira(l.lineKobo)}</span>
-            </div>
-          ))}
-          {ready && !lines.length && (
-            <div className="empty">
-              <span className="serif empty__title">Nothing here <em>yet.</em></span>
-              <Link href={settings.drop ? `/c/${settings.drop.collectionSlug}` : "/c/new-in"} className="ap-link">Shop the drop →</Link>
-            </div>
-          )}
-        </section>
+    <>
+      <div className="cm cm-page">
+        <header className="cm-head cm-head--row">
+          <h1 className="cm-title">
+            Your bag{ready && lines.length > 0 && <span className="cm-title__meta">{plural(n, "item", "items")}</span>}
+          </h1>
+          {threshold ? (
+            <Link href="/policies/delivery" className="u-link">Free delivery over {naira(threshold)}</Link>
+          ) : null}
+        </header>
 
-        <aside className="split__aside summary" aria-label="Summary">
-          <div className="mono-label summary__head">SUMMARY</div>
-          <div className="summary__rows">
-            <div className="summary__row"><span>Subtotal</span><span className="tnum">{naira(cart?.subtotalKobo ?? 0)}</span></div>
-            {!!cart?.discountKobo && <div className="summary__row"><span>Promo · {cart.promoCode}</span><span className="tnum">−{naira(cart.discountKobo)}</span></div>}
-            <div className="summary__row muted"><span>Delivery</span><span>At next step</span></div>
-            {applied > 0 && <div className="summary__row navy-em"><span>Exchange credit</span><span className="tnum">−{naira(applied)}</span></div>}
+        {ready && !lines.length ? (
+          <div className="cm-empty">
+            <p>Your bag is empty.</p>
+            <Link href="/c/new-in" className="u-link">Continue shopping</Link>
           </div>
-          {credit > 0 && <CreditToggle amountKobo={Math.min(credit, afterDisc || credit)} on={useCredit} onChange={setUseCredit} source={source} />}
-          {status === "guest" && (
-            <p className="mono-xs">HAVE EXCHANGE CREDIT? <Link href="/account?next=/bag" className="ap-link">SIGN IN</Link> TO USE IT.</p>
-          )}
-          <PromoForm />
-          <FreeDeliveryBar subtotalKobo={afterDisc} thresholdKobo={cart?.freeDeliveryThresholdKobo ?? settings.freeDeliveryThresholdKobo} />
-          <div className="summary__total">
-            <span>Total</span>
-            <span className="serif tnum summary__amount">{naira(total)}</span>
+        ) : (
+          <div className="cm-split">
+            <section className="cm-split__main" aria-label="Items">
+              {soldOut.length > 0 && (
+                <p className="cm-alert cm-note" role="alert">
+                  {soldOut.length === 1 ? `${soldOut[0].name} has sold out.` : `${soldOut.length} pieces have sold out.`} Remove {soldOut.length === 1 ? "it" : "them"} to continue to checkout.
+                </p>
+              )}
+              {!ready && <p className="cm-soft" aria-busy="true">Loading your bag…</p>}
+              <ul className="cm-lines">
+                {lines.map((l) => (
+                  <BagLine
+                    key={l.id}
+                    line={l}
+                    large
+                    busy={busy}
+                    onQty={(q) => update(l.id, { quantity: q })}
+                    onRemove={() => remove(l.id)}
+                    editor={editing === l.id ? <VariantEditor line={l} onDone={() => setEditing(null)} /> : undefined}
+                    actions={
+                      <>
+                        {(l.colour || l.size) && l.problem !== "SOLD_OUT" && (
+                          <button type="button" className="u-link" onClick={() => setEditing(l.id)}>
+                            Change<span className="sr-only"> colour or size of {l.name}</span>
+                          </button>
+                        )}
+                        <button type="button" className="u-link hide-mobile" onClick={() => saveForLater(l)}>
+                          Save for later<span className="sr-only">: {l.name}</span>
+                        </button>
+                      </>
+                    }
+                  />
+                ))}
+              </ul>
+            </section>
+
+            <aside className="cm-split__aside cm-summary" aria-label="Summary">
+              <div className="cm-rows">
+                <div className="cm-row"><span>Subtotal</span><span className="tnum">{naira(cart?.subtotalKobo ?? 0)}</span></div>
+                {!!cart?.discountKobo && <div className="cm-row"><span>Promo code {cart.promoCode}</span><span className="tnum">−{naira(cart.discountKobo)}</span></div>}
+                <div className="cm-row"><span>Delivery</span><span className="cm-soft">Calculated at checkout</span></div>
+                {applied > 0 && <div className="cm-row"><span>Exchange credit</span><span className="tnum">−{naira(applied)}</span></div>}
+              </div>
+              <PromoForm />
+              {credit > 0 && <CreditToggle amountKobo={Math.min(credit, afterDisc || credit)} on={useCredit} onChange={setUseCredit} source={source} />}
+              <div className="cm-row cm-row--total"><span>Total</span><span className="tnum">{naira(total)}</span></div>
+              <Link href="/checkout" className="btn btn--primary btn--block" aria-disabled={blocked || undefined} onClick={(e) => blocked && e.preventDefault()}>
+                Checkout
+              </Link>
+              <p className="cm-small cm-soft">
+                Exchange only — no refunds. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
+              </p>
+              {status === "guest" && (
+                <p className="cm-small cm-soft">
+                  Have exchange credit? <Link href="/account?next=/bag" className="u-link">Sign in</Link> to use it.
+                </p>
+              )}
+            </aside>
           </div>
-          <Link
-            href="/checkout"
-            className="btn btn--block"
-            aria-disabled={!lines.length || soldOut.length > 0}
-            onClick={(e) => (!lines.length || soldOut.length > 0) && e.preventDefault()}
-          >
-            <span>Checkout</span>
-            <span aria-hidden>→</span>
-          </Link>
-          <div className="summary__fine">
-            <span>{providers}</span>
-            <Link href="/policies/exchanges">NO REFUNDS · EXCHANGE ONLY</Link>
-          </div>
-        </aside>
+        )}
       </div>
-    </div>
+      <ProductCarousel title="You may also like" products={alsoLike} />
+    </>
   );
 }

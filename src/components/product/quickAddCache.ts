@@ -3,7 +3,7 @@ import type { Product } from "@/lib/types";
 
 const cache = new Map<string, Promise<Product>>();
 
-/** Fetch (once) the full product for quick add / reel / bag variant editing. */
+/** Fetch (once) the full product for bag variant editing / save for later. */
 export function loadProduct(slug: string): Promise<Product> {
   let p = cache.get(slug);
   if (!p) {

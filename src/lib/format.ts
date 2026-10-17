@@ -9,10 +9,10 @@ export const CREDIT_REASON_LABEL: Record<string, string> = {
 
 export const creditReasonLabel = (r: string) => CREDIT_REASON_LABEL[r] ?? r;
 
-/** ₦185,000 — kobo in, whole naira out (no kobo in UI). */
+/** "₦ 185,000" (narrow no-break space after the sign) — kobo in, whole naira out, no kobo (design v3 §2). */
 export function naira(kobo: Money | null | undefined): string {
   const n = Math.round((kobo ?? 0) / 100);
-  return "₦" + n.toLocaleString("en-NG");
+  return "₦\u202F" + n.toLocaleString("en-NG");
 }
 
 export function koboFromNaira(n: number): Money {

@@ -1,5 +1,6 @@
 /**
- * Mock dataset — the products, collections and settings shown in the v2 designs.
+ * Mock dataset — products, collections and settings for the v3 storefront (docs/design-v3.md).
+ * Images are neutral local placeholders (src/app/placeholder) — never brand photography.
  * Used ONLY when NEXT_PUBLIC_USE_MOCKS=true, or in development when the API is unreachable.
  */
 import type {
@@ -15,6 +16,8 @@ import type {
   SizeGuideKind,
   Badge,
 } from "../types";
+import { placeholderUrl } from "../placeholder";
+import { iconKind } from "../product";
 
 const HOUR = 3600_000;
 const DAY = 24 * HOUR;
@@ -51,6 +54,8 @@ type Seed = {
   care?: string;
   description?: string;
   imageAlts?: string[];
+  /** How many mock images to generate (default 4). */
+  images?: number;
 };
 
 export const COLLECTION_NAMES: Record<string, string> = {
@@ -70,7 +75,7 @@ const MENS = ["S", "M", "L", "XL"];
 
 const seeds: Seed[] = [
   { n: "014", slug: "cropped-leather-jacket", name: "Cropped leather jacket", price: 185000, material: "Lamb leather · Outerwear", badge: "NEW", colours: [C.Black, C.Tan, C.Burgundy], sizes: CLOTHING, guide: "CLOTHING", cols: ["women", "new-in"], soldOut: ["XL"], low: { L: 2 },
-    details: "Boxy cropped shape, dropped shoulder, two-way zip, Adire-print silk lining.", care: "Lamb leather, silk lining. Specialist leather clean only. Store on a wide hanger away from direct sun.", description: "A cropped jacket in buttery lamb leather, cut boxy through the body and lined in Adire-print silk dyed in Abeokuta.", imageAlts: ["Front", "Back", "Detail", "Lining"] },
+    details: "Boxy cropped shape, dropped shoulder, two-way zip, Adire-print silk lining.", care: "Lamb leather, silk lining. Specialist leather clean only. Store on a wide hanger away from direct sun.", description: "A cropped jacket in buttery lamb leather, cut boxy through the body and lined in Adire-print silk dyed in Abeokuta.", imageAlts: ["Front", "Worn", "Detail", "Lining"] },
   { n: "022", slug: "silk-camp-collar-shirt", name: "Silk camp-collar shirt", price: 62500, was: 78000, material: "Mulberry silk · Shirts", badge: "SALE", colours: [C.Ivory, C.Navy], sizes: MENS, guide: "CLOTHING", cols: ["men", "sale", "new-in"],
     details: "Relaxed camp collar, straight hem, mother-of-pearl buttons.", care: "100% mulberry silk. Dry clean or cool hand wash. Iron on the reverse.", description: "A fluid camp-collar shirt in heavy mulberry silk. Wear it open over a vest or buttoned to the top." },
   { n: "031", slug: "structured-tote", name: "Structured tote", price: 240000, material: "Calf leather · Bags", badge: "LOW_STOCK", colours: [C.Tan], sizes: [], guide: "NONE", cols: ["bags-accessories", "new-in"], low: { _: 2 },
@@ -93,7 +98,7 @@ const seeds: Seed[] = [
     details: "Wrap drape, concealed side zip, midi length.", care: "Silk crepe. Dry clean only." },
   { n: "066", slug: "block-heel-sandal", name: "Block-heel sandal", price: 92000, material: "Calf leather · Shoes", badge: "LOW_STOCK", colours: [C.Black], sizes: SHOES, guide: "SHOES", cols: ["shoes", "women"], low: { "39": 2 },
     details: "Two straps, 7 cm block heel, padded insole.", care: "Calf leather. Wipe clean." },
-  { n: "035", slug: "gold-tone-hoop-set", name: "Gold-tone hoop set", price: 35000, material: "Gold vermeil · Jewellery", colours: [C.Gold], sizes: [], guide: "NONE", cols: ["bags-accessories"], exchangeable: false,
+  { n: "035", slug: "gold-tone-hoop-set", name: "Gold-tone hoop set", price: 35000, material: "Gold vermeil · Jewellery", colours: [C.Gold], sizes: [], guide: "NONE", cols: ["bags-accessories"], exchangeable: false, images: 1,
     details: "Set of three hoops: 15, 22 and 30 mm.", care: "Gold vermeil on sterling silver. Keep dry." },
   { n: "071", slug: "velvet-blazer", name: "Velvet blazer", price: 210000, material: "Silk velvet · Tailoring", badge: "DROP", colours: [C.Navy, C.Black], sizes: CLOTHING, guide: "CLOTHING", cols: ["night-edit", "women"], low: { M: 2 },
     details: "Peak lapel, single button, satin-piped pockets.", care: "Silk velvet. Dry clean only; steam, never iron." },
@@ -103,7 +108,7 @@ const seeds: Seed[] = [
     details: "Envelope flap, detachable wrist strap. 28 × 16 cm.", care: "Box calf. Wipe with a dry cloth." },
   { n: "074", slug: "satin-wide-leg-trouser", name: "Satin wide-leg trouser", price: 98000, material: "Duchess satin · Trousers", badge: "DROP", colours: [C.Navy], sizes: CLOTHING, guide: "CLOTHING", cols: ["night-edit", "women"],
     details: "High rise, side stripe, wide leg.", care: "Duchess satin. Dry clean only." },
-  { n: "080", slug: "merino-roll-neck", name: "Merino roll-neck", price: 72000, material: "Merino · Knitwear", colours: [C.Black, C.Navy], sizes: MENS, guide: "CLOTHING", cols: ["men"],
+  { n: "080", slug: "merino-roll-neck", name: "Merino roll-neck", price: 72000, material: "Merino · Knitwear", colours: [C.Black, C.Navy], sizes: MENS, guide: "CLOTHING", cols: ["men"], images: 1,
     details: "Fine gauge, double-layer roll neck.", care: "Hand wash cold, dry flat." },
   { n: "083", slug: "double-pleat-trouser", name: "Double-pleat trouser", price: 98000, material: "Wool twill · Tailoring", colours: [C.Navy, C.Black], sizes: MENS, guide: "CLOTHING", cols: ["men"],
     details: "Double forward pleat, side adjusters, turn-ups.", care: "Wool twill. Dry clean." },
@@ -142,6 +147,17 @@ function buildVariants(seed: Seed): Variant[] {
   return out;
 }
 
+/** Image 1 = packshot on the stage ground; image 2 = worn / detail shot; then details. */
+function mockImages(seed: Seed): { url: string; alt: string }[] {
+  const kind = iconKind({ material: seed.material, name: seed.name });
+  const alts = seed.imageAlts ?? ["Front", "Worn", "Detail", "Back"];
+  const count = seed.images ?? alts.length;
+  return alts.slice(0, count).map((alt, i) => ({
+    url: i === 1 ? placeholderUrl(800, 1000, "cecdcb", `${seed.name} — worn`, "figure") : placeholderUrl(800, 1000, i === 0 ? "edece8" : "e3e2de", i === 0 ? seed.name : `${seed.name} — ${alt.toLowerCase()}`, kind),
+    alt: i === 0 ? seed.name : `${seed.name} — ${alt.toLowerCase()}`,
+  }));
+}
+
 function toCard(seed: Seed, variants: Variant[]): ProductCard {
   const total = variants.reduce((s, v) => s + v.available, 0);
   const minLow = seed.low ? Math.min(...Object.values(seed.low)) : null;
@@ -155,8 +171,7 @@ function toCard(seed: Seed, variants: Variant[]): ProductCard {
     compareAtKobo: seed.was ? seed.was * 100 : null,
     badge: seed.allSoldOut ? "SOLD_OUT" : seed.badge ?? null,
     lowStockCount: seed.badge === "LOW_STOCK" ? minLow : null,
-    // Empty url = drawn placeholder (the designs use icon placeholders, not photos)
-    images: (seed.imageAlts ?? ["Front", "Back", "Detail"]).map((alt) => ({ url: "", alt })),
+    images: mockImages(seed),
     colours: seed.colours,
     inStock: total > 0,
   };
@@ -218,6 +233,17 @@ export const FIRST_RUN_HOURS = 48;
 const DROP_LIVE_AT = new Date(NOW - (FIRST_RUN_HOURS * HOUR - (2 * HOUR + 14 * 60_000 + 37_000))).toISOString();
 const NEXT_DROP_AT = new Date(NOW + 2 * HOUR + 14 * 60_000 + 37_000).toISOString();
 
+/** Design v3 §8: home hero panels — drop first, then homeOrder 1..4. Shoes has no image (placeholder ground). */
+const HOME_ORDER: Record<string, number> = { "night-edit": 0, women: 1, men: 2, "bags-accessories": 3, shoes: 4 };
+const HERO: Record<string, string> = {
+  "night-edit": placeholderUrl(1600, 1000, "2b2722", "Drop 04 — The Night Edit", "figure"),
+  "harmattan-edit": placeholderUrl(1600, 1000, "cecdcb", "Drop 05", "figure"),
+  women: placeholderUrl(1600, 1000, "6f6a63", "Women", "figure"),
+  men: placeholderUrl(1600, 1000, "4a4540", "Men", "figure"),
+  "bags-accessories": placeholderUrl(1600, 1000, "8a837a", "Bags & Accessories", "bag"),
+  "new-in": placeholderUrl(1600, 1000, "5c5650", "New In", "figure"),
+};
+
 export const MOCK_COLLECTIONS: Collection[] = Object.keys(COLLECTION_NAMES).map((slug, i) => ({
   id: `col_${i + 1}`,
   slug,
@@ -226,7 +252,9 @@ export const MOCK_COLLECTIONS: Collection[] = Object.keys(COLLECTION_NAMES).map(
   count: MOCK_PRODUCTS.filter((p) => p.collections.some((c) => c.slug === slug)).length,
   isDrop: slug === "night-edit" || slug === "harmattan-edit",
   goLiveAt: slug === "night-edit" ? DROP_LIVE_AT : slug === "harmattan-edit" ? NEXT_DROP_AT : null,
-  heroPattern: slug === "women" || slug === "night-edit" ? "ADIRE" : slug === "bags-accessories" ? "ASOOKE" : null,
+  heroImageUrl: HERO[slug] ?? null,
+  homeOrder: HOME_ORDER[slug] ?? null,
+  tagline: slug === "night-edit" ? "Discover the drop" : null,
 }));
 
 
@@ -241,19 +269,19 @@ export const MOCK_SETTINGS: StoreSettings = {
   contactPhone: "+2348000000000",
   paystackEnabled: true,
   bachsEnabled: true,
-  exchangeWindowDays: 14,
+  exchangeWindowDays: 7,
   creditExpiryDays: 365,
   freeDeliveryThresholdKobo: 300_000_00,
-  tickerText: ["DROP 04 — THE NIGHT EDIT", "NOW LIVE", "DELIVERY ACROSS NIGERIA", "PAY WITH PAYSTACK OR BACHS", "EXCHANGE, NOT REFUND", "LAGOS"],
+  tickerText: ["Discover Drop 04 — The Night Edit", "Delivery across Nigeria", "Exchange, never a refund"],
   drop: { title: "The Night Edit", collectionSlug: "night-edit", goLiveAt: DROP_LIVE_AT, firstRunTotal: 48, firstRunLeft: 9 },
 };
 
 export const MOCK_ZONES: DeliveryZone[] = [
-  { id: "z1", code: "LAGOS_ISLAND", name: "Lagos Island", etaText: "1–2 WORKING DAYS", feeKobo: 4500_00, active: true },
-  { id: "z2", code: "LAGOS_MAINLAND", name: "Lagos Mainland", etaText: "1–3 WORKING DAYS", feeKobo: 3500_00, active: true },
-  { id: "z3", code: "LEKKI_AJAH", name: "Lekki – Ajah", etaText: "1–2 WORKING DAYS", feeKobo: 5000_00, active: true },
-  { id: "z4", code: "OTHER_STATES", name: "Other states", etaText: "3–5 WORKING DAYS", feeKobo: 9000_00, active: true },
-  { id: "z5", code: "PICKUP", name: "Collect from the store", etaText: "READY SAME DAY", feeKobo: 0, active: true },
+  { id: "z1", code: "LAGOS_ISLAND", name: "Lagos Island", etaText: "1–2 working days", feeKobo: 4500_00, active: true },
+  { id: "z2", code: "LAGOS_MAINLAND", name: "Lagos Mainland", etaText: "1–3 working days", feeKobo: 3500_00, active: true },
+  { id: "z3", code: "LEKKI_AJAH", name: "Lekki – Ajah", etaText: "1–2 working days", feeKobo: 5000_00, active: true },
+  { id: "z4", code: "OTHER_STATES", name: "Other states", etaText: "3–5 working days", feeKobo: 9000_00, active: true },
+  { id: "z5", code: "PICKUP", name: "Collect from the store", etaText: "Ready same day", feeKobo: 0, active: true },
 ];
 
 export const MOCK_FAQ: FaqGroup[] = [
@@ -270,7 +298,7 @@ export const MOCK_FAQ: FaqGroup[] = [
     { id: "f6", question: "Is my card safe?", answer: "Card details are entered on Paystack's or Bachs's secure page — they never touch our servers." },
   ] },
   { group: "Exchanges", items: [
-    { id: "f7", question: "Do you offer refunds?", answer: "No. We offer exchanges only: send back an unworn piece with its tags within 14 days of delivery and we'll add its full value to your exchange credit." },
+    { id: "f7", question: "Do you offer refunds?", answer: "No. We offer exchanges only: send back an unworn piece with its tags within 7 days of delivery and we'll add its full value to your exchange credit." },
     { id: "f8", question: "How do I use exchange credit?", answer: "It's applied automatically at checkout when you're signed in. If your new order costs more, you pay the difference; if less, the rest stays as credit." },
   ] },
   { group: "Sizing", items: [
@@ -289,7 +317,7 @@ Every piece is made in a limited, numbered run — No. 014, No. 022 — and when
 
 ## The cloth
 
-Our signature is *Adire Indigo*, the Yoruba resist-dyed cloth from Abeokuta. You'll find it lining our jackets, on our exchange-credit card, and drawn in code across this site.
+Every pattern is drafted in our Lagos studio and every seam finished by hand. We work in small numbered runs so nothing is made to sit on a shelf.
 
 ## The promise
 
@@ -312,7 +340,7 @@ Orders above the free-delivery threshold ship free. A rider will call the number
   exchanges: { slug: "exchanges", title: "Exchanges (no refunds)", updatedAt: new Date(NOW - 10 * DAY).toISOString(), bodyMarkdown:
 `**We don't offer refunds.** Instead, every unworn piece with its tags can be exchanged for credit.
 
-1. Request an exchange from your account (or the order lookup page) within 14 days of delivery.
+1. Request an exchange from your account (or the order lookup page) within 7 days of delivery.
 2. We'll approve it and email return instructions.
 3. Return the piece to the store or book a pickup.
 4. When we receive it, its full value is added to your exchange credit.

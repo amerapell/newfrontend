@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import "../styles/tokens.css";
 import "../styles/base.css";
-import "../styles/motion.css";
+import "../styles/ui.css";
 import "../styles/chrome.css";
-import "../styles/components.css";
-import "../styles/pages.css";
+import "../styles/shop.css";
+/* page styles (design-v3 "Maison") */
+import "../styles/home.css";
+import "../styles/product.css";
+import "../styles/content.css";
+import "../styles/motion.css";
+import "../styles/commerce.css";
 import "../styles/admin.css";
 import { fontVars } from "./fonts";
 import { SITE_URL } from "@/lib/env";
@@ -20,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#fffffa",
   width: "device-width",
   initialScale: 1,
 };

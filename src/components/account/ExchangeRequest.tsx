@@ -6,7 +6,7 @@ import { StepTracker } from "@/components/ui/StepTracker";
 import { TextAreaBox } from "@/components/ui/Field";
 import { useSettings } from "@/context/SettingsContext";
 import { exchangesApi } from "@/lib/api";
-import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, shortDay, upper } from "@/lib/format";
+import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, shortDay } from "@/lib/format";
 import { iconKind } from "@/lib/product";
 import type { Exchange, ExchangeStatus, Order } from "@/lib/types";
 
@@ -125,13 +125,11 @@ export function ExchangeRequestForm({
   return (
     <div className="exchange">
       <div className="exchange__head">
-        <div className="mono-label">
-          ORDER {order.number}
-          {order.deliveredAt ? ` · DELIVERED ${upper(longDate(order.deliveredAt))}` : ""}
-        </div>
-        <h1 className="serif exchange__title">
-          Request an <em>exchange</em>
-        </h1>
+        <h2 className="cm-h2">Request an exchange</h2>
+        <p className="cm-soft">
+          Order {order.number}
+          {order.deliveredAt ? ` · delivered ${longDate(order.deliveredAt)}` : ""}
+        </p>
         <p className="body-copy exchange__lede">
           We don&apos;t offer refunds. Send back an unworn piece with its tags and we&apos;ll add its full value to your exchange credit, ready to spend on anything in the store.
         </p>
@@ -147,7 +145,7 @@ export function ExchangeRequestForm({
       </div>
 
       {!windowOpen && (
-        <div className="notice notice--red" role="alert">
+        <div className="notice" role="alert">
           {order.status !== "DELIVERED"
             ? `Exchanges open once an order is delivered. ${order.number} is ${order.status.replace(/_/g, " ").toLowerCase()}.`
             : `The ${settings.exchangeWindowDays}-day exchange window for ${order.number} closed on ${longDate(order.exchangeableUntil)}.`}
@@ -155,7 +153,7 @@ export function ExchangeRequestForm({
       )}
 
       <div className="exchange__block">
-        <div className="mono-label exchange__step">1 — CHOOSE A PIECE</div>
+        <h3 className="exchange__step">1. Choose a piece</h3>
         {order.items.map((i) => {
           const on = picked.has(i.id);
           const ok = i.exchangeable && windowOpen;
@@ -174,11 +172,11 @@ export function ExchangeRequestForm({
                 <ProductImage src={i.imageUrl} alt="" kind={iconKind({ material: null, name: i.name })} iconSize={22} sizes="72px" />
               </span>
               <span className="stack gap-4">
-                <span className="serif ex-item__name">{i.name}</span>
-                <span className={`mono-xs${i.exchangeable ? "" : " red"}`}>
+                <span className="ex-item__name">{i.name}</span>
+                <span className="cm-small cm-soft">
                   {i.exchangeable
-                    ? [i.colour, i.size, until ? `EXCHANGEABLE UNTIL ${upper(shortDay(until).replace(/^\w+ /, ""))}` : null].filter(Boolean).map((x) => upper(String(x))).join(" · ")
-                    : `NOT EXCHANGEABLE${i.number ? ` · ${upper(i.number)}` : ""}`}
+                    ? [i.colour, i.size, until ? `Exchangeable until ${shortDay(until).replace(/^\w+ /, "")}` : null].filter(Boolean).join(" · ")
+                    : `Not exchangeable${i.number ? ` · ${i.number}` : ""}`}
                 </span>
               </span>
               <span className="tnum">{naira(i.unitKobo * i.quantity)}</span>
@@ -188,7 +186,7 @@ export function ExchangeRequestForm({
       </div>
 
       <div className="exchange__block">
-        <div className="mono-label exchange__step">2 — WHY</div>
+        <h3 className="exchange__step">2. Why</h3>
         <div className="row gap-8 wrap" role="radiogroup" aria-label="Reason">
           {REASONS.map((r) => (
             <button key={r} type="button" role="radio" aria-checked={reason === r} className={`reason${reason === r ? " is-on" : ""}`} onClick={() => !sent && setReason(r)}>
@@ -197,9 +195,9 @@ export function ExchangeRequestForm({
           ))}
         </div>
         <div className="exchange__extras">
-          <TextAreaBox label={reason === "Other" ? "TELL US MORE" : "NOTE · OPTIONAL"} rows={2} value={note} onChange={(e) => setNote(e.target.value)} disabled={!!sent} />
+          <TextAreaBox label={reason === "Other" ? "Tell us more" : "Note (optional)"} rows={2} value={note} onChange={(e) => setNote(e.target.value)} disabled={!!sent} />
           <div className="photos">
-            <span className="mono-xs">PHOTOS · OPTIONAL · UP TO 3</span>
+            <span className="cm-small cm-soft">Photos (optional, up to 3)</span>
             <div className="photos__row">
               {photos.map((u, k) => (
                 <span key={u} className="photos__thumb">
@@ -214,7 +212,7 @@ export function ExchangeRequestForm({
                 <label className="photos__add">
                   <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e.target.files)} />
                   <span aria-hidden>+</span>
-                  <span className="mono-xs">{uploading ? "UPLOADING…" : "ADD"}</span>
+                  <span className="cm-small">{uploading ? "Uploading…" : "Add"}</span>
                 </label>
               )}
             </div>
@@ -227,15 +225,14 @@ export function ExchangeRequestForm({
           Return it to the store or book a pickup. Credit is added when we receive it.
           {value > 0 && !sent && <> Value: <span className="tnum ink">{naira(value)}</span>.</>}
         </span>
-        <button type="button" className={`btn exchange__btn${sent ? " btn--done" : ""}`} onClick={submit} disabled={busy || (!sent && (!windowOpen || !picked.size))}>
-          <span>{sent ? `Request sent · ${sent.number}` : busy ? "Sending…" : "Request exchange"}</span>
-          <span aria-hidden>{sent ? "✓" : "→"}</span>
+        <button type="button" className="btn btn--primary exchange__btn" onClick={submit} disabled={busy || (!sent && (!windowOpen || !picked.size))}>
+          {sent ? `Request sent · ${sent.number}` : busy ? "Sending…" : "Request exchange"}
         </button>
       </div>
       {err && <p className="form-error" role="alert">{err}</p>}
 
       <div className="exchange__block">
-        <div className="mono-label exchange__step exchange__step--track">{sent ? `3 — TRACK ${sent.number}` : "3 — WHAT HAPPENS NEXT"}</div>
+        <h3 className="exchange__step">{sent ? `3. Track ${sent.number}` : "3. What happens next"}</h3>
         <ExchangeTracker ex={sent} />
       </div>
     </div>
@@ -247,16 +244,16 @@ export function ExchangeHistory({ exchanges }: { exchanges: Exchange[] }) {
   return (
     <div className="exchange__block">
       <div className="section-head section-head--ink">
-        <h2 className="serif section-head__title account__h2">Your <em>exchanges</em></h2>
+        <h2 className="cm-h2">Your exchanges</h2>
       </div>
       <ul className="ex-history">
         {exchanges.map((e) => (
           <li key={e.id} className="ex-history__item">
             <div className="row between wrap gap-12">
               <span className="stack">
-                <span className="serif ex-history__no">{e.number}</span>
+                <span className="ex-history__no">{e.number}</span>
                 <span className="meta">
-                  {e.orderNumber} · {upper(longDate(e.createdAt))} · {e.items.map((i) => i.name).join(", ").toUpperCase()}
+                  {e.orderNumber} · {longDate(e.createdAt)} · {e.items.map((i) => i.name).join(", ")}
                 </span>
               </span>
               <span className="row gap-16">
@@ -265,12 +262,12 @@ export function ExchangeHistory({ exchanges }: { exchanges: Exchange[] }) {
               </span>
             </div>
             <ExchangeTracker ex={e} />
-            {e.status === "DECLINED" && e.history.slice(-1)[0]?.note && <p className="mono-xs red">{e.history.slice(-1)[0].note}</p>}
+            {e.status === "DECLINED" && e.history.slice(-1)[0]?.note && <p className="notice">{e.history.slice(-1)[0].note}</p>}
           </li>
         ))}
       </ul>
-      <p className="mono-xs">
-        CREDIT IS NEVER PAID OUT AS CASH. <Link href="/policies/exchanges" className="ap-link">EXCHANGE POLICY</Link>
+      <p className="cm-small cm-soft">
+        Credit is never paid out as cash. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
       </p>
     </div>
   );

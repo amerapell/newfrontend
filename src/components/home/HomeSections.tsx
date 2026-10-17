@@ -1,111 +1,54 @@
 import Link from "next/link";
-import { AdirePattern, AsookeStripe } from "@/components/patterns/Patterns";
-import { ProductImage } from "@/components/product/ProductImage";
-import { iconKind } from "@/lib/product";
-import type { Collection, ProductCard, StoreSettings } from "@/lib/types";
+import { BagIcon, WhatsAppIcon } from "@/components/chrome/Icons";
+import { Photo } from "@/components/ui/Photo";
+import { whatsappLink } from "@/lib/product";
+import type { StoreSettings } from "@/lib/types";
 
-const pad = (n: number | undefined) => `${n ?? 0} PIECES`;
-
-export function CategoryTiles({ collections }: { collections: Collection[] }) {
-  const get = (slug: string) => collections.find((c) => c.slug === slug);
+/** Editorial story panel (§7.4): full-bleed, "Cut in Lagos, for the evenings that matter." → /about. */
+export function StoryPanel({ image }: { image: string | null | undefined }) {
   return (
-    <section className="container home-section" aria-labelledby="shopby">
-      <div id="shopby" className="mono-label rule-head">(03) — SHOP BY</div>
-      <div className="tiles">
-        <Link href="/c/women" className="tile tile--women on-dark">
-          <AdirePattern className="tile__pattern" />
-          <span className="tile__index">C/01 · {pad(get("women")?.count)}</span>
-          <span className="tile__card">
-            <span className="serif tile__name">Women</span>
-            <span className="tile__arrow" aria-hidden>→</span>
-          </span>
-        </Link>
-        <Link href="/c/men" className="tile tile--men">
-          <span className="tile__index">C/02 · {pad(get("men")?.count)}</span>
-          <span className="serif tile__giant">Men</span>
-          <span className="tile__foot">
-            <span>Tailoring, knitwear, leather</span>
-            <span className="tile__arrow" aria-hidden>→</span>
-          </span>
-        </Link>
-        <Link href="/c/bags-accessories" className="tile tile--bags">
-          <span className="tile__index">C/03 · {pad(get("bags-accessories")?.count)}</span>
-          <AsookeStripe height={64} />
-          <span className="tile__foot tile__foot--plain">
-            <span className="serif tile__name">
-              Bags &amp;
-              <br />
-              <em>accessories</em>
-            </span>
-            <span className="tile__arrow" aria-hidden>→</span>
-          </span>
-        </Link>
+    <section className={`hero hero--story${image ? " hero--photo on-dark" : " hero--empty"}`} aria-label="Our story">
+      <Link href="/about" className="hero__media" tabIndex={-1} aria-hidden>
+        <Photo src={image} alt="" sizes="100vw" />
+      </Link>
+      <div className="hero__cap">
+        <h2 className="hero__title">Cut in Lagos, for the evenings that matter.</h2>
+        <Link href="/about" className="u-link hero__link">Read our story</Link>
       </div>
     </section>
   );
 }
 
-export function BrandStatement() {
-  const promises = [
-    ["01", "Delivered across Nigeria", "Lagos in 1–3 working days."],
-    ["02", "Exchange, not refund", "Swap any unworn piece for credit."],
-    ["03", "Pay your way", "Paystack in naira, Bachs abroad."],
-    ["04", "A stylist on WhatsApp", "Fit and sizing, answered fast."],
+function ExchangeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden>
+      <path d="M2 6.5h12.5L11.5 3.5M16 11.5H3.5l3 3" />
+    </svg>
+  );
+}
+
+/** "Amerapelle at your service" (§7.5): three cards — image 3:2, 20px title, 14px text, underlined link. */
+export function ServiceCards({ settings }: { settings: StoreSettings }) {
+  const map = settings.pickupAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.pickupAddress)}` : "/contact";
+  const cards = [
+    { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true },
+    { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress },
+    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false },
   ];
   return (
-    <section className="container brand" aria-label="Our promise">
-      <p className="serif brand__line">
-        Cut in Lagos <em className="navy-em">for</em> the evenings that matter<span className="red">.</span>
-      </p>
-      <ul className="promises">
-        {promises.map(([n, t, d]) => (
-          <li key={n} className="promise">
-            <div className="mono-label">{n}</div>
-            <div className="promise__title">{t}</div>
-            <div className="promise__desc">{d}</div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** PG-1 Instagram/TikTok strip — styled from the design language (not in the v2 frames). */
-export function SocialStrip({ settings, products }: { settings: StoreSettings; products: ProductCard[] }) {
-  const handle = settings.instagramUrl ? "@" + settings.instagramUrl.replace(/\/$/, "").split("/").pop() : "@amerapelle";
-  return (
-    <section className="container social" aria-labelledby="social-title">
-      <div className="section-head section-head--ink">
-        <div>
-          <div className="mono-label">(04) — {handle.toUpperCase()}</div>
-          <h2 id="social-title" className="serif section-head__title social__title">
-            Worn in <em>Lagos</em>
-          </h2>
-        </div>
-        <div className="row gap-24 section-head__aside">
-          {settings.instagramUrl && (
-            <a href={settings.instagramUrl} className="ap-link" target="_blank" rel="noopener noreferrer">Instagram ↗</a>
-          )}
-          {settings.tiktokUrl && (
-            <a href={settings.tiktokUrl} className="ap-link" target="_blank" rel="noopener noreferrer">TikTok ↗</a>
-          )}
-        </div>
-      </div>
-      <ul className="social__strip">
-        <li>
-          <Link href="/reel" className="social__tile social__tile--reel on-dark">
-            <AdirePattern tile={120} className="tile__pattern" />
-            <span className="social__reel">
-              <span className="mono-xs">LOOKS · VIDEO</span>
-              <span className="serif">Shop the <em>reel</em> →</span>
+    <section className="service container" aria-labelledby="service-title">
+      <h2 id="service-title" className="t-title">Amerapelle at your service</h2>
+      <ul className="service__cards">
+        {cards.map((c) => (
+          <li key={c.title} className="service__card">
+            <span className="service__img">
+              <Photo src={null} alt="" />
+              <span className="service__icon">{c.icon}</span>
             </span>
-          </Link>
-        </li>
-        {products.slice(0, 5).map((p) => (
-          <li key={p.id}>
-            <a href={settings.instagramUrl || `/p/${p.slug}`} className="social__tile" target={settings.instagramUrl ? "_blank" : undefined} rel="noopener noreferrer">
-              <ProductImage src={p.images[0]?.url} alt={p.name} kind={iconKind(p)} iconSize={40} sizes="200px" />
-              <span className="social__cap mono-xs">{p.number.toUpperCase()}</span>
+            <h3 className="t-title">{c.title}</h3>
+            <p>{c.text}</p>
+            <a href={c.href} className="u-link" target={c.external ? "_blank" : undefined} rel={c.external ? "noopener noreferrer" : undefined}>
+              {c.link}
             </a>
           </li>
         ))}

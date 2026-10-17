@@ -15,7 +15,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (t: Omit<Toast, "id">) => {
       const id = ++seq.current;
       setToasts((list) => [...list.slice(-2), { ...t, id }]);
-      window.setTimeout(() => dismiss(id), 4500);
+      window.setTimeout(() => dismiss(id), 4000);
     },
     [dismiss],
   );

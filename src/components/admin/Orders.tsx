@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/context/ToastContext";
 import { adminApi } from "@/lib/api";
-import { ORDER_STATUS_LABEL, apiMessage, longDate, naira, upper } from "@/lib/format";
+import { ORDER_STATUS_LABEL, apiMessage, longDate, naira } from "@/lib/format";
 import type { AdminOrderDetail, OrderStatus } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
 import { Logo } from "@/components/brand/Logo";
@@ -29,7 +29,7 @@ export function OrdersAdmin() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   return (
     <>
-      <AdminHead index={`ORDERS · ${data?.total ?? "…"}`} title={<>All <em>orders</em></>} />
+      <AdminHead index={`Orders · ${data?.total ?? "…"}`} title={<>All <em>orders</em></>} />
       <div className="admin-filters">
         <input className="admin-input" placeholder="Search number, email, name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search orders" />
         <select className="admin-input" value={status} onChange={(e) => setParam("status", e.target.value)} aria-label="Status">
@@ -47,16 +47,16 @@ export function OrdersAdmin() {
         <table className="admin-table">
           <thead><tr><th>Order</th><th>Placed</th><th>Customer</th><th>Status</th><th>Provider</th><th>Delivery</th><th>Source</th><th className="num">Total</th></tr></thead>
           <tbody>
-            {loading && !data && <tr><td colSpan={8} className="mono-label">LOADING…</td></tr>}
+            {loading && !data && <tr><td colSpan={8} className="mono-label">Loading…</td></tr>}
             {data?.items.map((o) => (
               <tr key={o.id}>
                 <td><Link href={`/admin/orders/${o.id}`} className="ap-link">{o.number}</Link></td>
-                <td className="mono-xs">{upper(longDate(o.createdAt))}</td>
+                <td className="mono-xs">{longDate(o.createdAt)}</td>
                 <td>{o.delivery.address?.fullName ?? o.email}<div className="mono-xs">{o.delivery.address?.fullName ? o.email : o.phone}</div></td>
                 <td><span className={`status-pill status-pill--${o.status.toLowerCase()}`}>{ORDER_STATUS_LABEL[o.status]}</span></td>
                 <td className="mono-xs">{o.payment?.provider ?? "—"}</td>
                 <td>{o.delivery.name}</td>
-                <td className="mono-xs">{upper(o.utmSource ?? "direct")}</td>
+                <td className="mono-xs">{o.utmSource ?? "direct"}</td>
                 <td className="num tnum">{naira(o.totalKobo)}</td>
               </tr>
             ))}
@@ -67,7 +67,7 @@ export function OrdersAdmin() {
       {pages > 1 && (
         <div className="row gap-16 admin-pager">
           <button className="btn btn--ghost" disabled={page <= 1} onClick={() => setParam("page", String(page - 1))}>← Prev</button>
-          <span className="mono-xs">PAGE {page} / {pages}</span>
+          <span className="mono-xs">Page {page} / {pages}</span>
           <button className="btn btn--ghost" disabled={page >= pages} onClick={() => setParam("page", String(page + 1))}>Next →</button>
         </div>
       )}
@@ -86,7 +86,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
     if (o) setStatus(o.status);
   }, [o]);
   if (error) return <p className="form-error">{error}</p>;
-  if (!o) return <p className="mono-label">LOADING…</p>;
+  if (!o) return <p className="mono-label">Loading…</p>;
   const patch = async (b: { status?: OrderStatus; note?: string }) => {
     setBusy(true);
     try {
@@ -105,7 +105,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
   return (
     <>
       <AdminHead
-        index={`ORDERS / ${o.number} · ${upper(longDate(o.createdAt))}`}
+        index={`Orders / ${o.number} · ${longDate(o.createdAt)}`}
         title={<>{o.number}</>}
         actions={
           <>
@@ -116,22 +116,22 @@ export function OrderAdminDetail({ id }: { id: string }) {
       />
       <div className="admin-grid">
         <section className="admin-card">
-          <div className="mono-label admin-card__head">STATUS</div>
+          <div className="mono-label admin-card__head">Status</div>
           <div className="row gap-12 wrap">
             <select className="admin-input" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} aria-label="Order status">
               {STATUSES.map((s) => <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>)}
             </select>
             <button className="btn btn--short" disabled={busy || status === o.status || !status} onClick={() => patch({ status: status as OrderStatus })}>Update status</button>
           </div>
-          <p className="mono-xs">DISPATCHED, READY FOR PICKUP AND DELIVERED EMAIL THE CUSTOMER.</p>
+          <p className="mono-xs">Dispatched, ready for pickup and delivered email the customer.</p>
           <dl className="order-meta">
-            <div><dt className="mono-xs">PAYMENT</dt><dd>{o.payment?.provider ?? "—"} · {o.payment?.status ?? "—"}{o.payment?.reference ? ` · ${o.payment.reference}` : ""}</dd></div>
-            <div><dt className="mono-xs">SOURCE · UTM</dt><dd>{[o.utm.source ?? "direct", o.utm.medium, o.utm.campaign].filter(Boolean).join(" / ")}</dd></div>
-            {o.discountCode && <div><dt className="mono-xs">PROMO</dt><dd className="mono">{o.discountCode}</dd></div>}
-            <div><dt className="mono-xs">CUSTOMER</dt><dd>{o.userId ? "Account holder" : "Guest checkout"} · {o.marketingConsent ? "opted in to marketing" : "no marketing consent"}</dd></div>
-            <div><dt className="mono-xs">CONTACT</dt><dd>{o.email}<br />{o.phone}</dd></div>
+            <div><dt className="mono-xs">Payment</dt><dd>{o.payment?.provider ?? "—"} · {o.payment?.status ?? "—"}{o.payment?.reference ? ` · ${o.payment.reference}` : ""}</dd></div>
+            <div><dt className="mono-xs">Source · UTM</dt><dd>{[o.utm.source ?? "direct", o.utm.medium, o.utm.campaign].filter(Boolean).join(" / ")}</dd></div>
+            {o.discountCode && <div><dt className="mono-xs">Promo</dt><dd className="mono">{o.discountCode}</dd></div>}
+            <div><dt className="mono-xs">Customer</dt><dd>{o.userId ? "Account holder" : "Guest checkout"} · {o.marketingConsent ? "opted in to marketing" : "no marketing consent"}</dd></div>
+            <div><dt className="mono-xs">Contact</dt><dd>{o.email}<br />{o.phone}</dd></div>
             <div>
-              <dt className="mono-xs">DELIVERY · {upper(o.delivery.name)}</dt>
+              <dt className="mono-xs">Delivery · {o.delivery.name}</dt>
               <dd>
                 {a ? (
                   <>
@@ -144,7 +144,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
           </dl>
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">ITEMS</div>
+          <div className="mono-label admin-card__head">Items</div>
           <table className="admin-table">
             <tbody>
               {o.items.map((i) => (
@@ -164,10 +164,10 @@ export function OrderAdminDetail({ id }: { id: string }) {
           </table>
         </section>
         <section className="admin-card admin-card--wide">
-          <div className="mono-label admin-card__head">NOTES · INTERNAL</div>
+          <div className="mono-label admin-card__head">Notes · internal</div>
           <ul className="notes">
             {(o.notes ?? []).map((n, k) => (
-              <li key={n.id ?? k}><span className="mono-xs">{upper(longDate(n.createdAt))}{n.author ? ` · ${upper(n.author)}` : ""}</span> {n.body}</li>
+              <li key={n.id ?? k}><span className="mono-xs">{longDate(n.createdAt)}{n.author ? ` · ${n.author}` : ""}</span> {n.body}</li>
             ))}
             {!o.notes?.length && <li className="muted">No notes yet.</li>}
           </ul>
@@ -187,25 +187,25 @@ export function PackingSlip({ id }: { id: string }) {
   useEffect(() => {
     if (o) window.setTimeout(() => window.print(), 400);
   }, [o]);
-  if (!o) return <p className="mono-label">LOADING…</p>;
+  if (!o) return <p className="mono-label">Loading…</p>;
   const a = o.delivery.address;
   return (
     <div className="slip">
       <div className="slip__head">
         <span className="slip__mark"><Logo size={34} /></span>
-        <span className="mono-label">PACKING SLIP · {o.number}</span>
+        <span className="mono-label">Packing slip · {o.number}</span>
       </div>
       <div className="slip__grid">
         <div>
-          <div className="mono-xs">SHIP TO</div>
+          <div className="mono-xs">Ship to</div>
           {a ? (
             <p>{a.fullName}<br />{a.street}<br />{a.area}, {a.lga}<br />{a.state}<br />Landmark: {a.landmark}<br />{a.phone || o.phone}</p>
           ) : (
-            <p>PICKUP FROM STORE<br />{o.email}<br />{o.phone}</p>
+            <p>Pickup from store<br />{o.email}<br />{o.phone}</p>
           )}
         </div>
         <div>
-          <div className="mono-xs">ORDER</div>
+          <div className="mono-xs">Order</div>
           <p>{o.number}<br />{longDate(o.createdAt)}<br />{o.delivery.name}<br />{o.payment?.provider} · {o.payment?.reference}</p>
         </div>
       </div>
@@ -220,11 +220,11 @@ export function PackingSlip({ id }: { id: string }) {
       {a?.note && <p><b>Delivery note:</b> {a.note}</p>}
       {o.notes.length > 0 && (
         <div>
-          <div className="mono-xs">NOTES</div>
+          <div className="mono-xs">Notes</div>
           <ul className="notes">{o.notes.map((n) => <li key={n.id}>{n.body}</li>)}</ul>
         </div>
       )}
-      <p className="mono-xs slip__foot">EXCHANGE, NOT REFUND · UNWORN WITH TAGS WITHIN THE EXCHANGE WINDOW · AMERAPELLE, LAGOS</p>
+      <p className="mono-xs slip__foot">Exchange, not refund · unworn with tags within the exchange window · Amerapelle, Lagos</p>
       <button className="btn btn--short slip__print" onClick={() => window.print()}>Print</button>
     </div>
   );

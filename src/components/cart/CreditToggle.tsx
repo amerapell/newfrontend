@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { exchangesApi } from "@/lib/api";
 import { naira } from "@/lib/format";
 import { useAuth } from "@/context/AuthContext";
+import { Check } from "./Check";
 
-/** Latest exchange that produced credit, e.g. "Exchange EX-2031" — for the mono sub-label. */
+/** Latest exchange that produced credit, e.g. "Exchange EX-2031" — shown under the credit toggle. */
 export function useCreditSource() {
   const { status } = useAuth();
   const [source, setSource] = useState<string | null>(null);
@@ -22,15 +23,11 @@ export function useCreditSource() {
   return source;
 }
 
-/** Bordered toggle: "Use ₦62,500 exchange credit / FROM EXCHANGE EX-2031". */
-export function CreditToggle({ amountKobo, on, onChange, source }: { amountKobo: number; on: boolean; onChange: (v: boolean) => void; source?: string | null }) {
+/** Checkbox row: "Use ₦62,500 exchange credit" with a 12px source line. */
+export function CreditToggle({ amountKobo, on, onChange, source, id = "use-credit" }: { amountKobo: number; on: boolean; onChange: (v: boolean) => void; source?: string | null; id?: string }) {
   return (
-    <button type="button" role="switch" aria-checked={on} className={`credit-toggle${on ? " is-on" : ""}`} onClick={() => onChange(!on)}>
-      <span className={`check-box${on ? " is-on" : ""}`} aria-hidden>{on ? "✓" : ""}</span>
-      <span className="stack">
-        <span className="credit-toggle__title">Use {naira(amountKobo)} exchange credit</span>
-        {source && <span className="mono-xs">FROM {source.toUpperCase()}</span>}
-      </span>
-    </button>
+    <Check id={id} checked={on} onChange={onChange} sub={source ? `From ${source}` : undefined}>
+      Use {naira(amountKobo)} exchange credit
+    </Check>
   );
 }

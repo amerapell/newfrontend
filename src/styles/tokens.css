@@ -1,44 +1,63 @@
 /* ==========================================================================
-   Tokens — docs/design-v2.md
+   Tokens — docs/design-v3.md §1–§2 ("Maison"). The only colours in the UI.
+   Navy / red exist only inside the logo SVG (components/brand/Logo.tsx).
    ========================================================================== */
 :root {
-  --white: #ffffff; /* page background — v2 is WHITE, not ivory */
-  --ink: #0a0a0f;
-  --ink-2: #3a3b45;
-  --muted: #6a6b75;
-  --faint: #8a8b93;
-  --hair: #ececea;
-  --line: #e3e3df;
-  --img: #f2f2ef;
-  --wash: #fafaf8;
-  --navy: #0b1c4f;
-  --navy-2: #1e3172;
-  --red: #d3262c;
-  --tan: #b07a4a;
-  --cloth: #f4f1ea;
-  --success: #1f7a4d;
-  --disabled: #b5b5b0;
-  --track: #d6d6d1;
-  --icon: #c9c9c4;
+  /* surfaces */
+  --bg: #fffffa;          /* page background (warm ivory) */
+  --stage: #edece8;       /* product photo ground, PDP stage, service band */
+  --placeholder: #cecdcb; /* image loading / missing */
+  --espresso: #1b1612;    /* footer background, primary buttons, overlays */
+  --white: #ffffff;       /* text on photos / espresso */
 
-  --serif: var(--font-serif), "Montserrat", "Helvetica Neue", Arial, sans-serif; /* display face (logo typeface) */
-  --sans: var(--font-sans), Inter, system-ui, sans-serif;
-  --mono: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+  /* text */
+  --ink: #000000;         /* primary text */
+  --grey: #767676;        /* secondary: material line, tax note, labels, placeholders */
+  --error: #8a1c1c;       /* §1: form validation text only */
 
-  --ease-out: cubic-bezier(.2, .8, .2, 1);
-  --ease-in-out: cubic-bezier(.76, 0, .24, 1);
+  /* lines */
+  --rule: #767676;        /* input borders, section rules (1px) */
+  --hair: #e3e2de;        /* light dividers between list rows / grid columns */
+  --overlay: rgba(16, 16, 16, .3); /* page dim behind drawers & mega menu */
 
-  --page-max: 1440px;
+  /* type — Newsreader 400 everywhere (fonts.ts exposes --font-serif) */
+  --serif: var(--font-serif, "Newsreader"), Georgia, serif;
+  --logo: var(--font-logo, "Montserrat"), "Helvetica Neue", Arial, sans-serif;
+  --fs-display: 26px;
+  --fs-title: 20px;
+  --fs-product: 17px;
+  --fs-body: 14px;
+  --fs-small: 13px;
+  --lh: 1.4;
+
+  /* layout */
   --gutter: 40px;
-  --header-h: 76px;
-  --ticker-h: 34px;
-  --frost: rgba(255, 255, 255, .82);
+  --gutter-m: 16px;
+  --header-h: 92px;
+  --header-h-m: 56px;
+  --promo-h: 32px;
+  --bar-h: 56px;
+  --drawer-w: max(30vw, 420px);
+
+  /* motion */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --dur: 300ms;
+
+  /* ---- aliases kept so admin / older markup follows the v3 palette ---- */
+  --muted: var(--grey);
+  --faint: var(--grey);
+  --line: var(--hair);
+  --img: var(--stage);
+  --wash: var(--stage);
+  --dark: var(--espresso);
+  --on-dark: var(--white);
+  --mono: var(--serif);
+  --sans: var(--serif);
 }
 
+@media (max-width: 1023px) {
+  :root { --gutter: 24px; --header-h: var(--header-h-m); }
+}
 @media (max-width: 767px) {
-  :root {
-    --gutter: 16px;
-    --header-h: 56px;
-    --ticker-h: 28px;
-  }
+  :root { --gutter: var(--gutter-m); --drawer-w: 100vw; }
 }

@@ -123,3 +123,88 @@
   .ex-admin__thumbcell { width: 60px; }
   .ex-admin__thumb { width: 48px; height: 60px; }
 }
+
+/* ==========================================================================
+   Design v3 ("Maison") — admin adopts the storefront tokens: ivory ground,
+   Newsreader 400, square boxes, hairlines, espresso primary. Layout unchanged.
+   ========================================================================== */
+.admin, .admin__top, .admin__nav { background: var(--bg); }
+.admin__top { border-bottom-color: var(--hair); }
+.admin__navlink { font-size: var(--fs-body); }
+.admin__navlink.is-on { font-weight: 400; background: var(--stage); }
+.admin-head { border-bottom-color: var(--hair); }
+.admin-head__title { font-size: var(--fs-display); line-height: var(--lh); letter-spacing: normal; }
+.admin-head__actions .btn--short, .admin-head__actions .btn--ghost { height: auto; min-height: 44px; }
+.admin-input { background: var(--bg); border-color: var(--rule); font-size: var(--fs-body); }
+.admin-table { font-size: var(--fs-body); }
+.admin-table th { font-size: var(--fs-small); letter-spacing: normal; text-transform: none; border-bottom-color: var(--hair); }
+.kpi { border-color: var(--hair); }
+.kpi:hover { background: var(--stage); }
+.kpi__value, .ex-admin__credit { font-size: var(--fs-display); line-height: var(--lh); }
+.admin-card { border-color: var(--hair); }
+.admin-card__head { border-bottom-color: var(--hair); }
+.admin-list__title { font-size: var(--fs-title); line-height: var(--lh); }
+.bars__track--navy span { background: var(--ink); }
+.admin-login { border-color: var(--hair); }
+.slip__head { border-bottom-color: var(--hair); }
+.ex-admin__name { font-size: var(--fs-product); line-height: var(--lh); }
+.ex-admin__reason { font-size: var(--fs-title); line-height: var(--lh); }
+.ex-admin__quote { border-left: 1px solid var(--ink); }
+@media (max-width: 900px) {
+  .admin__nav { transition: transform var(--dur) var(--ease); }
+  .admin__nav.is-open { border-right-color: var(--hair); }
+  .admin-head__title { font-size: var(--fs-display); }
+}
+
+/* ---------- Leftovers ---------- */
+/* status pills: plain small text with a 6px square; quiet states go grey */
+.status-pill--paid, .status-pill--processing, .status-pill--dispatched, .status-pill--ready_for_pickup,
+.status-pill--delivered, .status-pill--exchange_requested, .status-pill--exchanged,
+.status-pill--requested, .status-pill--approved, .status-pill--item_received, .status-pill--credit_issued,
+.status-pill--live { color: var(--ink); }
+.status-pill--pending_payment, .status-pill--completed, .status-pill--draft, .status-pill--archived { color: var(--grey); }
+.status-pill--pending_payment::before, .status-pill--draft::before { background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
+
+/* alerts that need attention: ink text, 2px ink rule (no red in the UI, §1) */
+.notice--red { border-left-width: 2px; color: var(--ink); }
+
+/* label / value list */
+.order-meta { display: flex; flex-direction: column; margin: 0; border-top: 1px dashed var(--rule); }
+.order-meta > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--rule); }
+.order-meta dt { color: var(--grey); }
+.order-meta dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .order-meta > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+/* packing slip table */
+.slip__table th, .slip__table td { padding: 10px 12px 10px 0; }
+.slip__table td:first-child, .slip__table th:first-child { width: 28px; }
+
+/* collection hero image field */
+.hero-field { display: flex; flex-direction: column; gap: 8px; }
+.hero-field__label { font-size: var(--fs-small); color: var(--grey); }
+.hero-field__img { position: relative; aspect-ratio: 16 / 10; max-width: 480px; background: var(--placeholder); display: grid; place-items: center; overflow: hidden; }
+.hero-field__img img { width: 100%; height: 100%; object-fit: cover; }
+
+/* exchange photos (admin list) */
+.admin .photos__thumb { position: relative; display: inline-block; width: 56px; aspect-ratio: 4 / 5; background: var(--stage); overflow: hidden; border: 1px solid transparent; }
+.admin .photos__thumb:hover { border-color: var(--ink); }
+.admin .photos__thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* product image slots */
+.img-grid__slot { font-size: var(--fs-small); color: var(--grey); min-height: 2.8em; }
+.img-grid__thumb { position: relative; }
+.admin-noimg { color: var(--grey); }
+.img-grid__add { border-color: var(--rule); background: transparent; }
+
+/* colour dot (square, 10px) */
+.dot10 { display: inline-block; width: 10px; height: 10px; vertical-align: middle; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+
+/* login card: keep the stacked logo inside the card on phones */
+.admin-login { min-width: 0; max-width: 100%; }
+@media (max-width: 480px) {
+  .admin-login { padding: 24px 20px; }
+  .admin-login__mark .logo { --logo-size: 60px !important; }
+  .admin-login__mark .logo__mark { width: auto; height: 60px; }
+}
+.slip__print { align-self: flex-start; }
+.admin__top a, .admin__top button { white-space: nowrap; }

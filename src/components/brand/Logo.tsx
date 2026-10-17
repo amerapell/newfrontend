@@ -2,12 +2,13 @@ import type { CSSProperties } from "react";
 
 /**
  * Amerapelle logo — the "A" mark (traced from the brand logo) with the AMERAPELLE wordmark set in
- * Montserrat 700, the logo's typeface. Server-safe (no hooks).
+ * Montserrat 700 via --font-logo (the ONLY place Montserrat is used; everything else is Newsreader).
+ * Server-safe (no hooks).
  *
  *  variant="lockup"  mark + wordmark on one line (headers, footer, admin)
  *  variant="mark"    the A mark alone (favicons, tight spaces)
  *  variant="stacked" mark over wordmark + "CLOTHING AND ACCESSORIES" tagline (login, link-in-bio)
- *  tone="light"      cloth-coloured, for navy / dark backgrounds
+ *  tone="light"      --on-dark (#fffffa), for imagery, the transparent home header and the --dark footer
  */
 type Props = {
   variant?: "lockup" | "mark" | "stacked";
@@ -25,8 +26,8 @@ const MARK_NAVY = "M 209.835 32.750 C 206.500 39.763, 200.725 52.025, 197.001 60
 const MARK_RED = "M 426.250 202.774 C 422.813 206.855, 420 210.825, 420 211.597 C 420 212.369, 419.438 213, 418.750 213.001 C 417.277 213.002, 394.384 239.821, 394.750 241.116 C 394.888 241.602, 394.652 241.888, 394.227 241.750 C 393.486 241.510, 386 249.227, 386 250.231 C 386 250.500, 384.538 252.277, 382.750 254.179 C 371.227 266.442, 365.219 274.637, 364.188 279.500 C 360.776 295.596, 362.195 309.733, 368.232 319.785 C 371.658 325.489, 374.315 327.590, 403 347.269 C 409.875 351.985, 416.850 356.813, 418.500 357.997 C 421.230 359.955, 455.503 383.525, 479 399.603 C 484.225 403.178, 496.600 411.684, 506.500 418.504 C 546.801 446.268, 557.168 453.166, 557.737 452.597 C 558.065 452.269, 557.782 452, 557.108 452 C 556.434 452, 556.112 451.628, 556.392 451.174 C 556.673 450.720, 554.852 446.107, 552.345 440.924 C 549.838 435.741, 540.688 416.650, 532.013 398.500 C 508.937 350.227, 494.901 320.888, 489.195 309 C 469.487 267.946, 446.911 220.586, 442.240 210.500 C 436.199 197.456, 434.010 193.617, 433.985 196.027 C 433.975 196.963, 433.702 197.109, 433.235 196.427 C 432.792 195.781, 430.014 198.305, 426.250 202.774";
 
 export function LogoMark({ size = 32, tone = "color", title }: { size?: number; tone?: "color" | "light"; title?: string }) {
-  const ink = tone === "light" ? "var(--cloth)" : LOGO_NAVY;
-  const accent = tone === "light" ? "var(--cloth)" : LOGO_RED;
+  const ink = tone === "light" ? "var(--on-dark)" : LOGO_NAVY;
+  const accent = tone === "light" ? "var(--on-dark)" : LOGO_RED;
   return (
     <svg className="logo__mark" viewBox={MARK_VIEWBOX} height={size} width={Math.round((size * 551) / 467)} role={title ? "img" : undefined} aria-hidden={title ? undefined : true} aria-label={title} focusable="false">
       <path fillRule="evenodd" fill={ink} d={MARK_NAVY} />

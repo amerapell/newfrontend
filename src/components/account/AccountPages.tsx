@@ -2,71 +2,65 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Check } from "@/components/cart/Check";
 import { ProductCard } from "@/components/product/ProductCard";
-import { ProductImage } from "@/components/product/ProductImage";
-import { CheckRow, FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
-import { StepTracker } from "@/components/ui/StepTracker";
+import { Drawer } from "@/components/ui/Drawer";
+import { FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { accountApi, ApiError } from "@/lib/api";
-import { ORDER_STATUS_LABEL, apiMessage, localPhoneDisplay, longDate, naira, toE164NG, upper } from "@/lib/format";
+import { ORDER_STATUS_LABEL, apiMessage, localPhoneDisplay, longDate, naira, toE164NG } from "@/lib/format";
 import { useNgStates } from "@/lib/useNgStates";
-import { iconKind } from "@/lib/product";
 import type { Address, Order } from "@/lib/types";
 import { useAccount } from "./AccountShell";
-import { OrderItems, OrderTotals } from "./OrderParts";
-
-function PageHead({ index, title, sub }: { index: string; title: React.ReactNode; sub?: React.ReactNode }) {
-  return (
-    <div className="account__head">
-      <div className="mono-label">{index}</div>
-      <h1 className="serif account__title">{title}</h1>
-      {sub && <p className="body-copy account__sub">{sub}</p>}
-    </div>
-  );
-}
+import { CreditLocked } from "./EmailVerification";
+import { OrderItems, OrderMeta, OrderTotals, Progress } from "./OrderParts";
 
 export function canExchange(o: Order) {
   return o.status === "DELIVERED" && !!o.exchangeableUntil && new Date(o.exchangeableUntil).getTime() > Date.now() && o.items.some((i) => i.exchangeable);
 }
 
+const pieces = (o: Order) => o.items.reduce((s, i) => s + i.quantity, 0);
+
 /* ---------------- Orders ---------------- */
 
 export function OrdersList({ compact }: { compact?: boolean }) {
   const { orders } = useAccount();
-  if (!orders) return <p className="mono-label">LOADING ORDERS…</p>;
+  if (!orders) return <p className="cm-soft" aria-busy="true">Loading orders…</p>;
   if (!orders.length)
     return (
-      <div className="empty">
-        <span className="serif empty__title">No orders <em>yet.</em></span>
-        <Link href="/c/new-in" className="ap-link">Shop new in →</Link>
+      <div className="cm-empty cm-empty--inline">
+        <p>You haven&apos;t placed any orders yet.</p>
+        <Link href="/c/new-in" className="u-link">Continue shopping</Link>
       </div>
     );
   return (
-    <ul className="order-list">
-      {(compact ? orders.slice(0, 3) : orders).map((o) => (
-        <li key={o.id}>
-          <Link href={`/account/orders/${o.number}`} className="order-row">
-            <span className="order-row__thumbs" aria-hidden>
-              {o.items.slice(0, 3).map((i) => (
-                <span key={i.id} className="order-row__thumb">
-                  <ProductImage src={i.imageUrl} alt="" kind={iconKind({ material: null, name: i.name })} iconSize={18} sizes="48px" />
-                </span>
-              ))}
-            </span>
-            <span className="stack">
-              <span className="serif order-row__no">{o.number}</span>
-              <span className="meta">
-                {longDate(o.createdAt).toUpperCase()} · {o.items.reduce((s, i) => s + i.quantity, 0)} PIECES
-              </span>
-            </span>
-            <span className={`status-pill status-pill--${o.status.toLowerCase()}`}>{ORDER_STATUS_LABEL[o.status]}</span>
-            <span className="tnum">{naira(o.totalKobo)}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <table className="cm-table">
+      <caption className="sr-only">{compact ? "Recent orders" : "Your orders"}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Order</th>
+          <th scope="col">Date</th>
+          <th scope="col">Items</th>
+          <th scope="col">Status</th>
+          <th scope="col" className="cm-num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(compact ? orders.slice(0, 3) : orders).map((o) => (
+          <tr key={o.id}>
+            <th scope="row">
+              <Link href={`/account/orders/${o.number}`} className="u-link">{o.number}</Link>
+            </th>
+            <td data-label="Date">{longDate(o.createdAt)}</td>
+            <td data-label="Items">{pieces(o)}</td>
+            <td data-label="Status">{ORDER_STATUS_LABEL[o.status]}</td>
+            <td data-label="Total" className="cm-num tnum">{naira(o.totalKobo)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -80,7 +74,7 @@ function ProfileForm() {
   const [err, setErr] = useState<string | null>(null);
   return (
     <form
-      className="stack gap-12"
+      className="cm-form"
       onSubmit={async (e) => {
         e.preventDefault();
         const phone = f.phone.trim() ? toE164NG(f.phone) : null;
@@ -98,50 +92,61 @@ function ProfileForm() {
         }
       }}
     >
-      <div className="field-grid field-grid--200">
-        <FieldBox label="FIRST NAME" autoComplete="given-name" value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} />
-        <FieldBox label="LAST NAME" autoComplete="family-name" value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} />
-        <FieldBox label="PHONE · +234" type="tel" autoComplete="tel-national" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
+      <div className="cm-fields">
+        <FieldBox label="First name" autoComplete="given-name" value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} />
+        <FieldBox label="Last name" autoComplete="family-name" value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} />
+        <FieldBox full label="Phone (+234)" type="tel" autoComplete="tel-national" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       </div>
-      <CheckRow checked={consent} onChange={setConsent} id="me-consent" sub="NDPA · UNSUBSCRIBE ANY TIME">Email me about new drops and private sales</CheckRow>
-      {err && <p className="form-error" role="alert">{err}</p>}
-      <button className="btn btn--outline btn--short" disabled={busy} style={{ alignSelf: "flex-start" }}>{busy ? "Saving…" : "Save profile"}</button>
+      <Check id="me-consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">Email me about new drops and private sales</Check>
+      {err && <p className="cm-error" role="alert">{err}</p>}
+      <button className="btn btn--secondary cm-btn-auto" disabled={busy}>{busy ? "Saving…" : "Save details"}</button>
     </form>
   );
 }
 
 export function AccountOverview() {
   const { user } = useAuth();
-  const { orders } = useAccount();
+  const { orders, credit } = useAccount();
   const eligible = orders?.filter(canExchange) ?? [];
+  const balance = credit?.balanceKobo ?? user?.creditBalanceKobo ?? 0;
   return (
-    <>
-      <PageHead index="OVERVIEW" title={<>Your <em>account</em></>} sub={user ? `Signed in as ${user.email}.` : undefined} />
-      {eligible.length > 0 && (
-        <div className="notice">
-          {eligible[0].number} can be exchanged until {longDate(eligible[0].exchangeableUntil)}. <Link href={`/account/exchanges?order=${eligible[0].number}`} className="ap-link">Request an exchange</Link>
+    <div className="cm-stack-lg">
+      <p>
+        Hello{user?.firstName ? `, ${user.firstName}` : ""}. <span className="cm-soft">Signed in as {user?.email}.</span>
+      </p>
+      {user?.emailVerified === false ? (
+        <CreditLocked />
+      ) : (
+        <div className="cm-block cm-credit">
+          <p className="cm-credit__label">Exchange credit</p>
+          <p className="cm-figure tnum">{naira(balance)}</p>
+          <Link href="/account/exchanges" className="u-link">Exchanges &amp; credit</Link>
         </div>
       )}
-      <div className="section-head section-head--ink">
-        <h2 className="serif section-head__title account__h2">Recent <em>orders</em></h2>
-        <Link href="/account/orders" className="ap-link small-link">All orders →</Link>
-      </div>
-      <OrdersList compact />
-      <div className="section-head section-head--ink">
-        <h2 className="serif section-head__title account__h2">Your <em>details</em></h2>
-      </div>
-      <ProfileForm />
-    </>
+      {eligible.length > 0 && (
+        <p className="cm-block">
+          {eligible[0].number} can be exchanged until {longDate(eligible[0].exchangeableUntil)}. <Link href={`/account/exchanges?order=${eligible[0].number}`} className="u-link">Request an exchange</Link>
+        </p>
+      )}
+      <section aria-labelledby="recent-h">
+        <div className="cm-sechead">
+          <h2 id="recent-h" className="cm-h2">Recent orders</h2>
+          <Link href="/account/orders" className="u-link">All orders</Link>
+        </div>
+        <OrdersList compact />
+      </section>
+      <section aria-labelledby="details-h">
+        <div className="cm-sechead">
+          <h2 id="details-h" className="cm-h2">Your details</h2>
+        </div>
+        <ProfileForm />
+      </section>
+    </div>
   );
 }
 
 export function OrdersPage() {
-  return (
-    <>
-      <PageHead index="ORDERS" title={<>Your <em>orders</em></>} />
-      <OrdersList />
-    </>
-  );
+  return <OrdersList />;
 }
 
 const ORDER_STEPS = (pickup: boolean) => [
@@ -151,29 +156,33 @@ const ORDER_STEPS = (pickup: boolean) => [
   { label: pickup ? "Collected" : "Delivered", desc: "Enjoy it", s: ["DELIVERED", "EXCHANGE_REQUESTED", "EXCHANGED"] },
 ];
 
-export function OrderDetail({ order }: { order: Order }) {
+export function OrderDetail({ order, headingLevel = 2 }: { order: Order; headingLevel?: 1 | 2 }) {
   const pickup = order.delivery.zone === "PICKUP";
   const steps = ORDER_STEPS(pickup);
   const reached = order.status === "PENDING_PAYMENT" || order.status === "CANCELLED" ? 0 : steps.findIndex((s) => s.s.includes(order.status)) + 1;
+  const H = headingLevel === 1 ? "h1" : "h2";
   return (
-    <div className="stack gap-28">
-      <PageHead
-        index={`ORDER ${order.number} · ${upper(ORDER_STATUS_LABEL[order.status])}`}
-        title={<>Order <em>{order.number.replace("AP-", "")}</em></>}
-        sub={`Placed ${longDate(order.createdAt)}${order.deliveredAt ? ` · delivered ${longDate(order.deliveredAt)}` : ""}.`}
-      />
-      {order.status === "CANCELLED" ? <div className="notice notice--red">This order was cancelled.</div> : <StepTracker steps={steps} reached={reached} />}
+    <div className="cm-stack-lg">
+      <div className="cm-stack">
+        <H className={headingLevel === 1 ? "cm-title" : "cm-h2"}>Order {order.number}</H>
+        <p className="cm-soft">
+          {ORDER_STATUS_LABEL[order.status]} · Placed {longDate(order.createdAt)}
+          {order.deliveredAt ? ` · Delivered ${longDate(order.deliveredAt)}` : ""}
+        </p>
+      </div>
+      {order.status === "CANCELLED" ? <p className="cm-alert">This order was cancelled.</p> : <Progress label="Order progress" steps={steps} reached={reached} />}
       {canExchange(order) && (
-        <div className="notice">
-          Exchangeable until {longDate(order.exchangeableUntil)}. <Link href={`/account/exchanges?order=${order.number}`} className="ap-link">Request an exchange</Link>
-        </div>
+        <p className="cm-block">
+          Exchangeable until {longDate(order.exchangeableUntil)}. <Link href={`/account/exchanges?order=${order.number}`} className="u-link">Request an exchange</Link>
+        </p>
       )}
-      <div className="split split--tight">
-        <div className="split__main">
+      <div className="cm-split cm-split--inner">
+        <div className="cm-split__main">
           <OrderItems order={order} />
         </div>
-        <aside className="split__aside">
+        <aside className="cm-split__aside" aria-label="Order details">
           <OrderTotals order={order} />
+          <OrderMeta order={order} />
         </aside>
       </div>
     </div>
@@ -189,19 +198,11 @@ export function AccountOrderDetail({ number }: { number: string }) {
       .then(setOrder)
       .catch((e) => setErr(e instanceof ApiError && e.status === 404 ? "We couldn't find that order on your account." : apiMessage(e)));
   }, [number]);
-  if (err)
-    return (
-      <div className="empty">
-        <p className="body-copy">{err}</p>
-        <Link href="/account/orders" className="ap-link">← All orders</Link>
-      </div>
-    );
-  if (!order) return <p className="mono-label">LOADING ORDER…</p>;
   return (
-    <>
-      <Link href="/account/orders" className="ap-link small-link">← All orders</Link>
-      <OrderDetail order={order} />
-    </>
+    <div className="cm-stack-lg">
+      <Link href="/account/orders" className="u-link cm-self-start">‹ All orders</Link>
+      {err ? <p role="alert">{err}</p> : order ? <OrderDetail order={order} /> : <p className="cm-soft" aria-busy="true">Loading order…</p>}
+    </div>
   );
 }
 
@@ -209,49 +210,47 @@ export function AccountOrderDetail({ number }: { number: string }) {
 
 const blank: Address = { fullName: "", phone: "", state: "Lagos", lga: "", area: "", street: "", landmark: "", note: "" };
 
-function AddressForm({ initial, onSave, onCancel }: { initial: Address; onSave: (a: Address) => Promise<void>; onCancel: () => void }) {
+function AddressForm({ id, initial, onSave, onBusy }: { id: string; initial: Address; onSave: (a: Address) => Promise<void>; onBusy: (b: boolean) => void }) {
   const ng = useNgStates();
   const [a, setA] = useState<Address>({ ...initial, phone: localPhoneDisplay(initial.phone) || initial.phone });
   const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const set = (k: keyof Address, v: string) => setA((x) => ({ ...x, [k]: v, ...(k === "state" ? { lga: "" } : {}) }));
   return (
     <form
-      className="address-form"
+      id={id}
+      className="cm-form"
+      noValidate
       onSubmit={async (e) => {
         e.preventDefault();
         const phone = toE164NG(a.phone);
-        if (!a.fullName || !phone || !a.lga || !a.area || !a.street || !a.landmark) return setErr("Fill in every field (note is optional). Phone must be Nigerian.");
-        setBusy(true);
+        if (!a.fullName || !phone || !a.lga || !a.area || !a.street || !a.landmark) return setErr("Fill in every field (the note is optional). The phone number must be Nigerian.");
+        setErr(null);
+        onBusy(true);
         try {
           await onSave({ ...a, phone });
         } catch (x) {
           setErr(apiMessage(x));
         } finally {
-          setBusy(false);
+          onBusy(false);
         }
       }}
     >
-      <div className="field-grid field-grid--200">
-        <FieldBox full label="FULL NAME" value={a.fullName} onChange={(e) => set("fullName", e.target.value)} autoComplete="name" />
-        <FieldBox label="PHONE · +234" type="tel" value={a.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel-national" />
-        <SelectBox label="STATE" value={a.state} onChange={(e) => set("state", e.target.value)}>
+      <div className="cm-fields">
+        <FieldBox full label="Full name" value={a.fullName} onChange={(e) => set("fullName", e.target.value)} autoComplete="name" required />
+        <FieldBox full label="Phone (+234)" type="tel" value={a.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel-national" required />
+        <SelectBox label="State" value={a.state} onChange={(e) => set("state", e.target.value)}>
           {ng.names.map((s) => <option key={s}>{s}</option>)}
         </SelectBox>
         <SelectBox label="LGA" value={a.lga} onChange={(e) => set("lga", e.target.value)}>
-          <option value="">Choose…</option>
+          <option value="">Choose an LGA</option>
           {ng.lgasFor(a.state).map((l) => <option key={l}>{l}</option>)}
         </SelectBox>
-        <FieldBox label="CITY / AREA" value={a.area} onChange={(e) => set("area", e.target.value)} />
-        <FieldBox full label="STREET ADDRESS" value={a.street} onChange={(e) => set("street", e.target.value)} autoComplete="street-address" />
-        <FieldBox full label="NEAREST LANDMARK" value={a.landmark} onChange={(e) => set("landmark", e.target.value)} />
-        <TextAreaBox full label="DELIVERY NOTE · OPTIONAL" rows={2} value={a.note ?? ""} onChange={(e) => set("note", e.target.value)} />
+        <FieldBox full label="City / area" value={a.area} onChange={(e) => set("area", e.target.value)} required />
+        <FieldBox full label="Street address" value={a.street} onChange={(e) => set("street", e.target.value)} autoComplete="street-address" required />
+        <FieldBox full label="Nearest landmark" value={a.landmark} onChange={(e) => set("landmark", e.target.value)} required hint="Helps the rider find you." />
+        <TextAreaBox full label="Delivery note (optional)" rows={2} value={a.note ?? ""} onChange={(e) => set("note", e.target.value)} />
       </div>
-      {err && <p className="form-error" role="alert">{err}</p>}
-      <div className="row gap-16">
-        <button className="btn btn--short" disabled={busy}>Save address</button>
-        <button type="button" className="ap-link small-link" onClick={onCancel}>Cancel</button>
-      </div>
+      {err && <p className="cm-error" role="alert">{err}</p>}
     </form>
   );
 }
@@ -260,62 +259,82 @@ export function AddressesPage() {
   const { addresses, setAddresses } = useAccount();
   const toast = useToast();
   const [editing, setEditing] = useState<string | "new" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const list = addresses ?? [];
+  const current = editing === "new" ? blank : list.find((a) => a.id === editing) ?? null;
+
+  const save = async (a: Address) => {
+    if (editing === "new") {
+      const created = await accountApi.addAddress(a);
+      setAddresses([...list, created]);
+      toast.show({ message: "Address saved." });
+    } else if (editing) {
+      const updated = await accountApi.updateAddress(editing, a);
+      setAddresses(list.map((y) => (y.id === editing ? updated : y)));
+      toast.show({ message: "Address updated." });
+    }
+    setEditing(null);
+  };
+
   return (
-    <>
-      <PageHead index="ADDRESSES" title={<>Saved <em>addresses</em></>} sub="Used to fill checkout faster. No postcode needed — a landmark helps the rider." />
-      {editing === "new" ? (
-        <AddressForm
-          initial={blank}
-          onCancel={() => setEditing(null)}
-          onSave={async (a) => {
-            const created = await accountApi.addAddress(a);
-            setAddresses([...list, created]);
-            setEditing(null);
-            toast.show({ message: "Address saved." });
-          }}
-        />
-      ) : (
-        <button className="btn btn--outline btn--short" onClick={() => setEditing("new")}>Add an address +</button>
-      )}
-      <ul className="address-list">
-        {list.map((a) =>
-          editing === a.id ? (
-            <li key={a.id}>
-              <AddressForm
-                initial={a}
-                onCancel={() => setEditing(null)}
-                onSave={async (x) => {
-                  const updated = await accountApi.updateAddress(a.id!, x);
-                  setAddresses(list.map((y) => (y.id === a.id ? updated : y)));
-                  setEditing(null);
-                }}
-              />
-            </li>
-          ) : (
-            <li key={a.id} className="address-card">
-              <span className="mono-xs">{upper(a.lga)} · {upper(a.state)}</span>
-              <span className="serif address-card__name">{a.fullName}</span>
-              <span>{a.street}, {a.area}</span>
-              <span className="muted">Near {a.landmark}</span>
-              <span className="muted">{localPhoneDisplay(a.phone) ? `+234 ${localPhoneDisplay(a.phone)}` : a.phone}</span>
-              <span className="row gap-16">
-                <button className="ap-link small-link" onClick={() => setEditing(a.id!)}>Edit</button>
+    <div className="cm-stack-lg">
+      <p className="cm-soft">Saved addresses fill checkout faster. No postcode needed — a landmark helps the rider.</p>
+      {addresses === null ? (
+        <p className="cm-soft" aria-busy="true">Loading addresses…</p>
+      ) : list.length ? (
+        <ul className="cm-addresses">
+          {list.map((a) => (
+            <li key={a.id} className="cm-address">
+              <p>{a.fullName}</p>
+              <p>{a.street}, {a.area}</p>
+              <p>{a.lga}, {a.state}</p>
+              <p className="cm-soft">Near {a.landmark}</p>
+              <p className="cm-soft">{localPhoneDisplay(a.phone) ? `+234 ${localPhoneDisplay(a.phone)}` : a.phone}</p>
+              <div className="cm-links">
+                <button type="button" className="cm-textbtn cm-textbtn--ink" onClick={() => setEditing(a.id!)}>
+                  Edit<span className="sr-only"> address for {a.fullName}, {a.street}</span>
+                </button>
                 <button
-                  className="ap-link small-link muted"
+                  type="button"
+                  className="cm-textbtn cm-textbtn--ink"
                   onClick={async () => {
-                    await accountApi.deleteAddress(a.id!);
-                    setAddresses(list.filter((y) => y.id !== a.id));
+                    setErr(null);
+                    try {
+                      await accountApi.deleteAddress(a.id!);
+                      setAddresses(list.filter((y) => y.id !== a.id));
+                      toast.show({ message: "Address deleted." });
+                    } catch (x) {
+                      setErr(apiMessage(x));
+                    }
                   }}
                 >
-                  Delete
+                  Delete<span className="sr-only"> address for {a.fullName}, {a.street}</span>
                 </button>
-              </span>
+              </div>
             </li>
-          ),
-        )}
-      </ul>
-    </>
+          ))}
+        </ul>
+      ) : (
+        <p>You have no saved addresses yet.</p>
+      )}
+      {err && <p className="cm-error" role="alert">{err}</p>}
+      <button type="button" className="btn btn--secondary cm-btn-auto" onClick={() => setEditing("new")}>Add an address</button>
+
+      <Drawer
+        open={current !== null}
+        onClose={() => setEditing(null)}
+        title={editing === "new" ? "Add an address" : "Edit address"}
+        footer={
+          <div className="cm-drawer-foot">
+            <button type="submit" form="address-form" className="btn btn--primary btn--block" disabled={busy}>{busy ? "Saving…" : "Save address"}</button>
+            <button type="button" className="btn btn--secondary btn--block" onClick={() => setEditing(null)}>Cancel</button>
+          </div>
+        }
+      >
+        {current && <AddressForm key={editing ?? "x"} id="address-form" initial={current} onSave={save} onBusy={setBusy} />}
+      </Drawer>
+    </div>
   );
 }
 
@@ -326,23 +345,18 @@ export function WishlistPage() {
   useEffect(() => {
     void reload();
   }, [reload]);
-  return (
-    <>
-      <PageHead index="SAVED" title={<>Saved <em>pieces</em></>} />
-      {items.length ? (
-        <div className="product-grid product-grid--3">
-          {items.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      ) : (
-        <div className="empty">
-          <span className="serif empty__title">Nothing saved <em>yet.</em></span>
-          <p className="body-copy">Tap the heart on any piece to keep it here.</p>
-          <Link href="/c/new-in" className="ap-link">Shop new in →</Link>
-        </div>
-      )}
-    </>
+  return items.length ? (
+    <div className="cm-grid">
+      {items.map((p) => (
+        <ProductCard key={p.id} product={p} sizes="(max-width: 767px) 50vw, 25vw" />
+      ))}
+    </div>
+  ) : (
+    <div className="cm-empty cm-empty--inline">
+      <p>Your wishlist is empty.</p>
+      <p className="cm-soft">Save any piece with the bookmark icon to keep it here.</p>
+      <Link href="/c/new-in" className="u-link">Continue shopping</Link>
+    </div>
   );
 }
 
@@ -385,28 +399,24 @@ export function PrivacyPage() {
     }
   };
   return (
-    <>
-      <PageHead index="PRIVACY · NDPA 2023" title={<>Your <em>data</em></>} sub="Download everything we hold about you, or delete your account. Order records we must keep for tax are anonymised." />
-      <div className="privacy-block">
-        <div>
-          <h2 className="privacy-block__title">Download your data</h2>
-          <p className="body-copy">A JSON file with your profile, addresses, orders, exchanges, credit and saved pieces.</p>
-        </div>
-        <button className="btn btn--outline btn--short" onClick={exportData} disabled={busy !== null}>{busy === "export" ? "Preparing…" : "Download JSON"}</button>
-      </div>
-      <div className="privacy-block privacy-block--danger">
-        <div>
-          <h2 className="privacy-block__title">Delete your account</h2>
-          <p className="body-copy">This signs you out everywhere and anonymises your personal data. Unspent exchange credit is forfeited. This can&apos;t be undone.</p>
-          <FieldBox label='TYPE "DELETE" TO CONFIRM' value={confirm} onChange={(e) => setConfirm(e.target.value)} className="privacy-block__confirm" />
-        </div>
-        <button className="btn btn--danger btn--short" disabled={confirm !== "DELETE" || busy !== null} onClick={del}>{busy === "delete" ? "Deleting…" : "Delete account"}</button>
-      </div>
-      {err && <p className="form-error" role="alert">{err}</p>}
-      <p className="mono-xs">
-        SEE OUR <Link href="/policies/privacy" className="ap-link">PRIVACY POLICY</Link> FOR HOW WE USE YOUR DATA.
+    <div className="cm-stack-lg">
+      <p className="cm-soft">Under the Nigeria Data Protection Act 2023 you can download everything we hold about you, or delete your account. Order records we must keep for tax are anonymised.</p>
+      <section className="cm-block cm-stack" aria-labelledby="export-h">
+        <h2 id="export-h" className="cm-h2">Download your data</h2>
+        <p>A JSON file with your profile, addresses, orders, exchanges, credit and wishlist.</p>
+        <button type="button" className="btn btn--secondary cm-btn-auto" onClick={exportData} disabled={busy !== null}>{busy === "export" ? "Preparing…" : "Download my data"}</button>
+      </section>
+      <section className="cm-block cm-stack" aria-labelledby="delete-h">
+        <h2 id="delete-h" className="cm-h2">Delete your account</h2>
+        <p>This signs you out everywhere and anonymises your personal data. Unspent exchange credit is forfeited. This can&apos;t be undone.</p>
+        <FieldBox label='Type "DELETE" to confirm' value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" />
+        <button type="button" className="btn btn--secondary cm-btn-auto" disabled={confirm !== "DELETE" || busy !== null} onClick={del}>{busy === "delete" ? "Deleting…" : "Delete my account"}</button>
+      </section>
+      {err && <p className="cm-error" role="alert">{err}</p>}
+      <p className="cm-small cm-soft">
+        See our <Link href="/policies/privacy" className="u-link">Privacy Policy</Link> for how we use your data.
       </p>
-    </>
+    </div>
   );
 }
 

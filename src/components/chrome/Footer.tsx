@@ -1,12 +1,11 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { AsookeStripe } from "@/components/patterns/Patterns";
 import { useSettings } from "@/context/SettingsContext";
 import { contentApi } from "@/lib/api";
 import { apiMessage } from "@/lib/format";
-import { Logo } from "@/components/brand/Logo";
+import { whatsappLink } from "@/lib/product";
+import { InstagramIcon, TikTokIcon, WhatsAppIcon } from "./Icons";
 
 function Newsletter() {
   const [email, setEmail] = useState("");
@@ -23,7 +22,7 @@ function Newsletter() {
     try {
       await contentApi.newsletter(email);
       setState("ok");
-      setMsg("You're on the list. See you at the next drop.");
+      setMsg("Thank you — you're on the list.");
       setEmail("");
     } catch (err) {
       setState("error");
@@ -31,86 +30,97 @@ function Newsletter() {
     }
   };
   return (
-    <form className="footer__col" onSubmit={submit} noValidate>
-      <label htmlFor="news" className="mono-label footer__head">FIRST TO KNOW ABOUT DROPS</label>
-      <div className="line-input">
+    <form className="footer__news" onSubmit={submit} noValidate>
+      <label htmlFor="news" className="footer__news-title">Amerapelle News</label>
+      <p className="t-small">Be the first to know about new drops and private sales.</p>
+      <div className="line-field line-field--light">
         <input id="news" type="email" autoComplete="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} aria-describedby="news-note" />
-        <button type="submit" disabled={state === "busy"}>Join →</button>
+        <button type="submit" disabled={state === "busy"}>Sign up</button>
       </div>
-      <span id="news-note" className={state === "error" ? "form-error" : state === "ok" ? "form-ok" : "footer__fine"} role={state === "error" ? "alert" : undefined}>
-        {msg || "Drop emails only. Unsubscribe any time."}
-      </span>
+      {msg && (
+        <p id="news-note" className="t-small" role={state === "error" ? "alert" : "status"}>
+          {msg}
+        </p>
+      )}
+      <p className="t-small footer__consent">
+        By subscribing, you agree to our <Link href="/policies/privacy" className="u-link">privacy policy</Link>
+      </p>
     </form>
   );
 }
 
-/** Footer: 40px Aso-oke band. Home = 4 columns + giant cropped wordmark; inner pages = compact row. */
-export function Footer({ variant }: { variant?: "home" | "compact" }) {
-  const pathname = usePathname();
+/**
+ * Footer (§5): espresso, white text. Row 1 tagline + newsletter; row 2 four link columns; row 3 legal line.
+ */
+export function Footer() {
   const { settings } = useSettings();
-  const v = variant ?? (pathname === "/" ? "home" : "compact");
   const year = new Date().getFullYear();
-
-  if (v === "compact") {
-    return (
-      <footer className="footer footer--compact">
-        <AsookeStripe height={40} />
-        <div className="container footer__row">
-          <Link href="/" className="footer__mark" aria-label="Amerapelle — home"><Logo size={30} /></Link>
-          <nav aria-label="Footer" className="footer__links">
-            <Link href="/policies/delivery">Delivery</Link>
-            <Link href="/policies/exchanges">Exchanges</Link>
-            <Link href="/faq">FAQ</Link>
-            <Link href="/contact">Contact</Link>
-            <Link href="/policies/privacy">Privacy</Link>
-            <Link href="/policies/terms">Terms</Link>
-          </nav>
-          <span className="mono-label">© {year} AMERAPELLE · LAGOS</span>
-        </div>
-      </footer>
-    );
-  }
-
+  const map = settings.pickupAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.pickupAddress)}` : "/contact";
   return (
-    <footer className="footer">
-      <AsookeStripe height={40} />
-      <div className="container footer__grid">
-        <div className="footer__col">
-          <span className="mono-label footer__head">SHOP</span>
-          <Link href="/c/women">Women</Link>
-          <Link href="/c/men">Men</Link>
-          <Link href="/c/bags-accessories">Bags &amp; Accessories</Link>
-          <Link href="/c/shoes">Shoes</Link>
+    <footer className="footer on-dark">
+      <div className="footer__top">
+        <p className="footer__tagline">Quiet luxury, cut in Lagos.</p>
+        <div className="footer__side">
+          <Newsletter />
+          <ul className="footer__social" aria-label="Social">
+            <li>
+              <a href={settings.instagramUrl || "https://instagram.com/"} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><InstagramIcon /></a>
+            </li>
+            <li>
+              <a href={settings.tiktokUrl || "https://tiktok.com/"} target="_blank" rel="noopener noreferrer" aria-label="TikTok"><TikTokIcon /></a>
+            </li>
+            <li>
+              <a href={whatsappLink(settings.whatsappNumber, "Hi Amerapelle, ")} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><WhatsAppIcon /></a>
+            </li>
+          </ul>
         </div>
-        <div className="footer__col">
-          <span className="mono-label footer__head">HELP</span>
-          <Link href="/policies/delivery">Delivery</Link>
-          <Link href="/policies/exchanges">Exchanges</Link>
-          <Link href="/faq">FAQ</Link>
-          <Link href="/orders/lookup">Track an order</Link>
-          <Link href="/contact">Contact</Link>
-        </div>
-        <div className="footer__col">
-          <span className="mono-label footer__head">VISIT</span>
-          <span>{settings.pickupAddress || "Lagos, Nigeria"}</span>
-          {settings.openingHours && <span>{settings.openingHours}</span>}
-          <span className="row gap-16">
-            {settings.instagramUrl && <a href={settings.instagramUrl} className="ap-link" target="_blank" rel="noopener noreferrer">Instagram</a>}
-            {settings.tiktokUrl && <a href={settings.tiktokUrl} className="ap-link" target="_blank" rel="noopener noreferrer">TikTok</a>}
-          </span>
-        </div>
-        <Newsletter />
       </div>
-      <div className="container footer__legal">
-        <span className="mono-label">© {year} AMERAPELLE · LAGOS</span>
-        <span className="row gap-16">
-          <Link href="/about" className="mono-label">ABOUT</Link>
-          <Link href="/policies/privacy" className="mono-label">PRIVACY</Link>
-          <Link href="/policies/terms" className="mono-label">TERMS</Link>
-        </span>
-      </div>
-      <div className="container footer__giant-wrap" aria-hidden>
-        <div className="footer__giant serif">AMERAPELLE</div>
+
+      <nav className="footer__cols" aria-label="Footer">
+        <div className="footer__col">
+          <h2>Client Service</h2>
+          <ul>
+            <li><a href={whatsappLink(settings.whatsappNumber, "Hi Amerapelle, ")} target="_blank" rel="noopener noreferrer">WhatsApp us</a></li>
+            <li><a href={settings.contactPhone ? `tel:${settings.contactPhone}` : "/contact"}>Call us</a></li>
+            <li><a href={settings.contactEmail ? `mailto:${settings.contactEmail}` : "/contact"}>Email us</a></li>
+            <li><a href={map} target={settings.pickupAddress ? "_blank" : undefined} rel="noopener noreferrer">Visit the store</a></li>
+          </ul>
+        </div>
+        <div className="footer__col">
+          <h2>Orders</h2>
+          <ul>
+            <li><Link href="/policies/delivery">Delivery</Link></li>
+            <li><Link href="/policies/exchanges">Exchanges</Link></li>
+            <li><Link href="/orders/lookup">Track an order</Link></li>
+            <li><Link href="/faq#payments">Payment</Link></li>
+          </ul>
+        </div>
+        <div className="footer__col">
+          <h2>Shop</h2>
+          <ul>
+            <li><Link href="/c/new-in">New In</Link></li>
+            <li><Link href="/c/women">Women</Link></li>
+            <li><Link href="/c/men">Men</Link></li>
+            <li><Link href="/c/bags-accessories">Bags &amp; Accessories</Link></li>
+            <li><Link href="/c/shoes">Shoes</Link></li>
+          </ul>
+        </div>
+        <div className="footer__col">
+          <h2>Amerapelle</h2>
+          <ul>
+            <li><Link href="/about">About</Link></li>
+            <li><Link href="/faq">FAQ</Link></li>
+            <li><Link href="/policies/privacy">Privacy</Link></li>
+            <li><Link href="/policies/terms">Terms</Link></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div className="footer__legal">
+        <span>Ship to: Nigeria (₦)</span>
+        <span>© {year} Amerapelle, Lagos</span>
+        <Link href="/policies/privacy">Privacy</Link>
+        <Link href="/policies/terms">Terms</Link>
       </div>
     </footer>
   );

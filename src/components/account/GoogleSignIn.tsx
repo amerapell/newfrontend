@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isUsingMocks } from "@/lib/api";
 import { USE_MOCKS } from "@/lib/env";
 
-/** Set at build time; the button only renders when it is configured. */
+/** Set at build time; the button only renders when it is configured (or in mock mode). */
 export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+export const GOOGLE_ENABLED = !!GOOGLE_CLIENT_ID || USE_MOCKS;
 
 type GsiButtonOptions = { type: "standard"; theme: "outline"; size: "large"; text: "continue_with"; shape: "rectangular"; width: number; logo_alignment: "left" };
 type Gsi = {
@@ -24,7 +25,7 @@ declare global {
 }
 
 /**
- * "Continue with Google" drawn in the design system (1px line border, white, Inter 14/500, sharp corners).
+ * "Continue with Google" drawn as the design system's secondary button (1px ink border, 48px, serif 14px).
  * Google Identity Services' own button is rendered invisibly on top so the click opens Google's real popup
  * and returns an ID token (`credential`) — that is what POST /auth/google verifies.
  * In mock mode there is no Google round trip: the click resolves with a mock credential.
@@ -72,14 +73,14 @@ export function GoogleSignIn({ onCredential, disabled }: { onCredential: (creden
     return () => ro.disconnect();
   }, [mount]);
 
-  if (!GOOGLE_CLIENT_ID) return null;
+  if (!GOOGLE_CLIENT_ID && !mocks) return null;
 
   return (
-    <div ref={host} className={`google-btn${disabled ? " is-disabled" : ""}`}>
+    <div ref={host} className={`cm-google${disabled ? " is-disabled" : ""}`}>
       {!mocks && <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={mount} />}
       <button
         type="button"
-        className="google-btn__face"
+        className="btn btn--secondary btn--block cm-google__face"
         disabled={disabled}
         // Only reached when Google's layer is absent (mock mode, or the script was blocked).
         onClick={() => (isUsingMocks() ? cb.current("mock-google-credential") : window.google?.accounts?.id.prompt())}
@@ -89,22 +90,22 @@ export function GoogleSignIn({ onCredential, disabled }: { onCredential: (creden
         <GoogleMark />
         <span>Continue with Google</span>
       </button>
-      {!mocks && <div ref={overlay} className="google-btn__gsi" aria-label="Continue with Google" />}
+      {!mocks && <div ref={overlay} className="cm-google__gsi" aria-label="Continue with Google" />}
     </div>
   );
 }
 
 export function OrDivider() {
   return (
-    <div className="or-divider" role="separator" aria-label="or">
-      <span className="mono-label">OR</span>
+    <div className="cm-or" role="separator" aria-label="or">
+      <span>or</span>
     </div>
   );
 }
 
 function GoogleMark() {
   return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden focusable="false">
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden focusable="false">
       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
       <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />

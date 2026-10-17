@@ -70,7 +70,7 @@ type DB = {
 
 const { NOW, DAY } = MOCK_TIME;
 const iso = (ms: number) => new Date(ms).toISOString();
-const STORE_KEY = "ap_mockdb_v1";
+const STORE_KEY = "ap_mockdb_v3";
 
 function seedOrders(): AdminOrder[] {
   const jacket = MOCK_PRODUCTS.find((p) => p.slug === "cropped-leather-jacket")!;
@@ -185,8 +185,11 @@ function liveProducts(): Product[] {
   return d.products.filter((p) => (d.productMeta[p.id]?.status ?? "LIVE") === "LIVE");
 }
 
+/** Mock products flagged "Featured piece in listings" (admin can toggle it per product). */
+const MOCK_FEATURED = new Set(["satin-slip-dress", "velvet-blazer", "structured-tote"]);
+
 function card(p: Product): ProductCard {
-  return stripToCard(p);
+  return { ...stripToCard(p), featured: p.featured ?? MOCK_FEATURED.has(p.slug) };
 }
 
 function findVariant(id: string): { product: Product; variant: Variant } | null {
@@ -205,8 +208,10 @@ function filterProducts(list: Product[], q: URLSearchParams) {
   const max = q.get("maxKobo");
   const inStock = q.get("inStock") === "true";
   const term = (q.get("q") || "").trim().toLowerCase();
-  if (size) out = out.filter((p) => p.variants.some((v) => v.size === size && v.available > 0));
-  if (colour) out = out.filter((p) => p.options.colours.some((c) => c.name.toLowerCase() === colour.toLowerCase()));
+  const sizes = (size || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const colours = (colour || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+  if (sizes.length) out = out.filter((p) => p.variants.some((v) => !!v.size && sizes.includes(v.size) && v.available > 0));
+  if (colours.length) out = out.filter((p) => p.options.colours.some((c) => colours.includes(c.name.toLowerCase())));
   if (min) out = out.filter((p) => p.priceKobo >= Number(min));
   if (max) out = out.filter((p) => p.priceKobo <= Number(max));
   if (inStock) out = out.filter((p) => p.inStock);
@@ -307,6 +312,7 @@ function adminProduct(p: Product): AdminProduct {
   const imgs = meta?.images ?? p.images;
   return {
     ...p,
+    featured: p.featured ?? MOCK_FEATURED.has(p.slug),
     status: meta?.status ?? "LIVE",
     basePriceKobo: p.priceKobo,
     lowStockThreshold: 2,
@@ -338,7 +344,7 @@ function applyProductInput(input: AdminProductInput, existing?: Product): Produc
     badge: input.compareAtKobo ? "SALE" : existing?.badge ?? "NEW", lowStockCount: null,
     images: input.images.map((i) => ({ url: i.url, alt: i.alt })), colours: input.colours, inStock: variants.some((v) => v.available > 0),
     description: input.description, details: input.details || null, care: input.care || null, sizeGuide: input.sizeGuide, exchangeable: input.exchangeable,
-    options: { colours: input.colours, sizes: input.sizes }, variants, collections: cols, related: existing?.related ?? [],
+    options: { colours: input.colours, sizes: input.sizes }, variants, collections: cols, related: existing?.related ?? [], featured: input.featured ?? false,
     seo: { title: `${input.name} — Amerapelle`, description: input.description.slice(0, 150), ogImage: input.images[0]?.url ?? null },
   };
   d.productMeta[id] = { status: input.status, collectionIds: input.collectionIds, images: input.images };
@@ -389,7 +395,14 @@ export async function mockRoute(req: MockRequest): Promise<unknown> {
   if ((m = is("GET", "products/:slug"))) {
     const p = d.products.find((x) => x.slug === m!.slug);
     if (!p) throw new MockHttpError(404, "Product not found");
-    return p;
+    return { ...p, featured: p.featured ?? MOCK_FEATURED.has(p.slug) };
+  }
+  if ((m = is("POST", "products/:slug/notify"))) {
+    const p = d.products.find((x) => x.slug === m!.slug);
+    if (!p) throw new MockHttpError(404, "Product not found");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email ?? "").trim())) throw new MockHttpError(400, "Enter a valid email address");
+    if (!p.variants.some((v) => v.id === body.variantId)) throw new MockHttpError(400, "Unknown size for this product");
+    return { ok: true };
   }
   if (is("GET", "search/suggest")) {
     const term = (q.get("q") || "").trim().toLowerCase();
@@ -780,7 +793,12 @@ export async function mockRoute(req: MockRequest): Promise<unknown> {
       });
       return done({ updated, errors });
     }
-    if (is("POST", "admin/uploads/sign")) return { cloudName: "mock", apiKey: "mock", timestamp: Math.floor(Date.now() / 1000), signature: "mock", folder: "amerapelle/products" };
+    if (is("POST", "admin/uploads/sign")) return { mode: "direct" };
+    if (is("POST", "admin/uploads/image")) {
+      const file = body instanceof FormData ? body.get("file") : null;
+      const url = file && typeof window !== "undefined" && file instanceof Blob ? URL.createObjectURL(file) : "/placeholder/1600x1000/cecdcb/Upload.svg";
+      return { url, width: null, height: null };
+    }
     if (is("GET", "admin/collections")) return d.collections.map((c) => ({ ...c, productCount: c.count, exchangeable: true, sortOrder: 0 }));
     if ((m = is("GET", "admin/collections/:id"))) {
       const c = d.collections.find((x) => x.id === m!.id);
@@ -788,7 +806,7 @@ export async function mockRoute(req: MockRequest): Promise<unknown> {
       return { ...c, productCount: c.count, exchangeable: true, sortOrder: 0 };
     }
     if (is("POST", "admin/collections")) {
-      const c = { id: rid("col"), count: 0, description: null, isDrop: false, goLiveAt: null, heroPattern: null, ...(body as Partial<Collection>) } as Collection;
+      const c = { id: rid("col"), count: 0, description: null, isDrop: false, goLiveAt: null, heroImageUrl: null, homeOrder: null, tagline: null, ...(body as Partial<Collection>) } as Collection;
       d.collections.push(c);
       return done(c);
     }

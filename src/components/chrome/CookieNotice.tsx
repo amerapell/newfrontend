@@ -32,12 +32,12 @@ export function CookieNotice() {
   return (
     <div className="cookie" role="region" aria-label="Cookie notice">
       <p>
-        <span className="mono-label">COOKIES</span> We use essential cookies to keep your bag and sign-in working. With your OK we&apos;ll also use analytics cookies to improve the store.{" "}
-        <Link href="/policies/privacy" className="ap-link">Privacy</Link>
+        We use essential cookies to keep your bag and sign-in working. With your OK we&apos;ll also use analytics cookies to improve the store.{" "}
+        <Link href="/policies/privacy" className="u-link">Privacy</Link>
       </p>
       <div className="cookie__actions">
-        <button type="button" className="btn btn--ghost" onClick={() => decide("essential")}>Decline non-essential</button>
-        <button type="button" className="btn btn--short" onClick={() => decide("all")}>Accept all</button>
+        <button type="button" className="btn btn--secondary" onClick={() => decide("essential")}>Essential only</button>
+        <button type="button" className="btn btn--primary" onClick={() => decide("all")}>Accept all</button>
       </div>
     </div>
   );

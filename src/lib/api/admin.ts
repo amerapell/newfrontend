@@ -43,7 +43,6 @@ export const adminApi = {
     fd.append("file", file);
     return api.post<{ updated: number; errors: string[] }>("admin/stock/import", fd, { ...a, direct: true });
   },
-  signUpload: () => api.post<CloudinarySignature>("admin/uploads/sign", undefined, a),
 
   collections: () => api.get<AdminCollection[]>("admin/collections", a),
   collection: (id: string) => api.get<AdminCollection>(`admin/collections/${id}`, a),
@@ -85,17 +84,23 @@ export const adminApi = {
   updatePage: (slug: string, b: { title?: string; bodyMarkdown?: string }) => api.patch<ContentPage>(`admin/pages/${slug}`, b, a),
 };
 
-/** Direct browser → Cloudinary signed upload (signature comes from the API). */
-export async function uploadToCloudinary(file: File): Promise<string> {
-  const sig = await adminApi.signUpload();
-  if (sig.cloudName === "mock") {
-    return await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = () => reject(r.error);
-      r.readAsDataURL(file);
-    });
+type UploadMode = ({ mode: "cloudinary" } & CloudinarySignature) | { mode: "direct" } | (CloudinarySignature & { mode?: undefined });
+
+/**
+ * Admin image upload (product images, collection hero images). POST /admin/uploads/sign says how:
+ *  - `{ mode: "cloudinary", …signed params }` → straight from the browser to Cloudinary;
+ *  - `{ mode: "direct" }` → multipart POST /admin/uploads/image (built-in storage, WebP variants via sharp).
+ * Resolves with the public image URL.
+ */
+export async function uploadImage(file: File): Promise<string> {
+  const how = await api.post<UploadMode>("admin/uploads/sign", undefined, a);
+  if (how.mode === "direct") {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await api.post<{ url: string }>("admin/uploads/image", fd, { ...a, direct: true });
+    return res.url;
   }
+  const sig = how as CloudinarySignature;
   const fd = new FormData();
   fd.append("file", file);
   fd.append("api_key", sig.apiKey);
@@ -107,3 +112,6 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   const json = (await res.json()) as { secure_url: string };
   return json.secure_url;
 }
+
+/** @deprecated use uploadImage (handles built-in storage as well as Cloudinary). */
+export const uploadToCloudinary = uploadImage;

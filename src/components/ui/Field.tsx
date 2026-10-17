@@ -3,49 +3,61 @@ import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, 
 
 type Common = { label: string; error?: string | null; full?: boolean; hint?: ReactNode; className?: string };
 
-/** 58px box, mono label inside top-left, border turns ink on focus. */
+/**
+ * Labels used to be set in mono caps ("PHONE · OPTIONAL"). v3 is sentence case, so all-caps
+ * labels are converted ("Phone · optional"); mixed-case labels are left exactly as written.
+ */
+export function sentenceLabel(label: string) {
+  if (!/[A-Z]/.test(label) || label !== label.toUpperCase()) return label;
+  // Keep known acronyms in capitals (LGA, ID, UK, US, EU, OTP).
+  const KEEP = new Set(["lga", "id", "uk", "us", "eu", "otp", "fct"]);
+  const lower = label.toLowerCase().replace(/\b[a-z]+\b/g, (w) => (KEEP.has(w) ? w.toUpperCase() : w));
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+/**
+ * Design v3 §6 input: 48px box, 1px --rule border (ink on focus), floating label — sits inside as the
+ * placeholder (grey 14px) and shrinks to 11px at the top-left once focused or filled. Password fields keep
+ * the eye toggle. A real `placeholder` keeps the label floated.
+ */
 export const FieldBox = forwardRef<HTMLInputElement, Common & InputHTMLAttributes<HTMLInputElement>>(function FieldBox(
-  { label, error, full, hint, className = "", id, type, ...rest },
+  { label, error, full, hint, className = "", id, type, placeholder, ...rest },
   ref,
 ) {
   const auto = useId();
   const fid = id ?? auto;
   const isPassword = type === "password";
   const [visible, setVisible] = useState(false);
-  const input = (
-    <label className={`field${error ? " field--error" : ""}${isPassword ? " field--password" : ""}`} htmlFor={fid}>
-      <span className="field__label">{label}</span>
-      <input ref={ref} id={fid} type={isPassword && visible ? "text" : type} aria-invalid={!!error} aria-describedby={error ? `${fid}-err` : undefined} {...rest} />
-    </label>
-  );
+  const describedBy = error ? `${fid}-err` : hint ? `${fid}-hint` : undefined;
   return (
     <div className={`field-wrap ${full ? "field-wrap--full" : ""} ${className}`}>
-      {isPassword ? (
-        <div className="field-pw">
-          {input}
-          <button
-            type="button"
-            className="field-pw__toggle"
-            onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Hide password" : "Show password"}
-            aria-pressed={visible}
-            aria-controls={fid}
-          >
-            {visible ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
+      <div className={`field${error ? " field--error" : ""}${isPassword ? " field--password" : ""}${placeholder ? " field--float" : ""}`}>
+        <label className="field__label" htmlFor={fid}>{sentenceLabel(label)}</label>
+        <div className="field__control">
+          <input ref={ref} id={fid} type={isPassword && visible ? "text" : type} placeholder={placeholder || " "} aria-invalid={!!error} aria-describedby={describedBy} {...rest} />
+          {isPassword && (
+            <button
+              type="button"
+              className="field__toggle"
+              onClick={() => setVisible((v) => !v)}
+              aria-label={visible ? "Hide password" : "Show password"}
+              aria-pressed={visible}
+              aria-controls={fid}
+            >
+              {visible ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          )}
         </div>
-      ) : (
-        input
-      )}
+      </div>
       {error && <span id={`${fid}-err`} className="field__error" role="alert">{error}</span>}
-      {!error && hint && <span className="field__hint">{hint}</span>}
+      {!error && hint && <span id={`${fid}-hint`} className="field__hint">{hint}</span>}
     </div>
   );
 });
 
 function EyeIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
       <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -54,7 +66,7 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
       <path d="M2 12s3.6-7 10-7c2 0 3.8.7 5.2 1.6M22 12s-3.6 7-10 7c-2 0-3.8-.7-5.2-1.6" />
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
       <path d="M3 3l18 18" />
@@ -62,45 +74,51 @@ function EyeOffIcon() {
   );
 }
 
-export function SelectBox({ label, error, full, className = "", id, children, ...rest }: Common & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+export function SelectBox({ label, error, full, hint, className = "", id, children, ...rest }: Common & SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
   const auto = useId();
   const fid = id ?? auto;
   return (
     <div className={`field-wrap ${full ? "field-wrap--full" : ""} ${className}`}>
-      <label className={`field field--select${error ? " field--error" : ""}`} htmlFor={fid}>
-        <span className="field__label">{label}</span>
-        <select id={fid} aria-invalid={!!error} {...rest}>
-          {children}
-        </select>
-      </label>
-      {error && <span className="field__error" role="alert">{error}</span>}
+      <div className={`field field--select field--float${error ? " field--error" : ""}`}>
+        <label className="field__label" htmlFor={fid}>{sentenceLabel(label)}</label>
+        <div className="field__control">
+          <select id={fid} aria-invalid={!!error} aria-describedby={error ? `${fid}-err` : undefined} {...rest}>
+            {children}
+          </select>
+        </div>
+      </div>
+      {error && <span id={`${fid}-err`} className="field__error" role="alert">{error}</span>}
+      {!error && hint && <span className="field__hint">{hint}</span>}
     </div>
   );
 }
 
-export function TextAreaBox({ label, error, full, className = "", id, ...rest }: Common & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextAreaBox({ label, error, full, hint, className = "", id, placeholder, ...rest }: Common & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const auto = useId();
   const fid = id ?? auto;
   return (
     <div className={`field-wrap ${full ? "field-wrap--full" : ""} ${className}`}>
-      <label className={`field field--area${error ? " field--error" : ""}`} htmlFor={fid}>
-        <span className="field__label">{label}</span>
-        <textarea id={fid} aria-invalid={!!error} {...rest} />
-      </label>
-      {error && <span className="field__error" role="alert">{error}</span>}
+      <div className={`field field--area${error ? " field--error" : ""}${placeholder ? " field--float" : ""}`}>
+        <label className="field__label" htmlFor={fid}>{sentenceLabel(label)}</label>
+        <div className="field__control">
+          <textarea id={fid} placeholder={placeholder || " "} aria-invalid={!!error} aria-describedby={error ? `${fid}-err` : undefined} {...rest} />
+        </div>
+      </div>
+      {error && <span id={`${fid}-err`} className="field__error" role="alert">{error}</span>}
+      {!error && hint && <span className="field__hint">{hint}</span>}
     </div>
   );
 }
 
-/** Square ink checkbox row (marketing consent, save address, credit). */
+/** 14px square checkbox, 1px ink box, filled ink when checked (§6). */
 export function CheckRow({ checked, onChange, children, sub, id }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode; sub?: ReactNode; id?: string }) {
   return (
-    <label className="check-row" htmlFor={id}>
+    <label className="check" htmlFor={id}>
       <input id={id} type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className={`check-box${checked ? " is-on" : ""}`} aria-hidden>{checked ? "✓" : ""}</span>
-      <span className="stack">
+      <span className="check__box" aria-hidden />
+      <span className="check__label">
         <span>{children}</span>
-        {sub && <span className="mono-xs">{sub}</span>}
+        {sub && <span className="check__sub">{typeof sub === "string" ? sentenceLabel(sub) : sub}</span>}
       </span>
     </label>
   );

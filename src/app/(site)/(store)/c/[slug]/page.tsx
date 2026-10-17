@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdirePattern, AsookeStripe } from "@/components/patterns/Patterns";
+import { CategoryHeader, type RailLink } from "@/components/shop/CategoryHeader";
 import { ShopView } from "@/components/shop/ShopView";
 import { catalogApi, safe, ApiError } from "@/lib/api";
 import { parseFilters, type SearchParams } from "@/lib/filters";
 import { SITE_URL } from "@/lib/env";
+import { subcategoriesOf, subcategoryHref } from "@/lib/nav";
 import type { CollectionPage } from "@/lib/types";
 
 // Filters live in the query string, so this route renders per request;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: c.name,
     description,
     alternates: { canonical: `${SITE_URL}/c/${slug}` },
-    openGraph: { title: `${c.name} — Amerapelle`, description, url: `${SITE_URL}/c/${slug}`, images: data.products.items[0]?.images[0]?.url ? [data.products.items[0].images[0].url] : undefined },
+    openGraph: { title: `${c.name} — Amerapelle`, description, url: `${SITE_URL}/c/${slug}`, images: c.heroImageUrl ? [c.heroImageUrl] : undefined },
   };
 }
 
@@ -39,37 +40,26 @@ export default async function CollectionPageRoute({ params, searchParams }: Prop
   }
   if (!data) {
     return (
-      <div className="container empty empty--page">
-        <span className="serif empty__title">The shop is <em>resting.</em></span>
-        <p className="body-copy">We couldn&apos;t load this collection right now. Please try again in a moment.</p>
-        <Link href="/" className="ap-link">Back to the index →</Link>
+      <div className="container page-msg">
+        <h1 className="t-display">The shop is resting.</h1>
+        <p>We couldn&apos;t load this collection right now. Please try again in a moment.</p>
+        <Link href="/" className="u-link">Back to the home page</Link>
       </div>
     );
   }
   const { collection: c, products, facets } = data;
+  const all = await safe(catalogApi.collection(slug, { pageSize: 96 }), null);
+  const subs = subcategoriesOf(all?.products.items ?? products.items);
+  const q = filters.q?.toLowerCase();
+  const rail: RailLink[] = [
+    { label: `All ${c.name}`, href: `/c/${slug}`, active: !q },
+    ...subs.map((s) => ({ label: s, href: subcategoryHref(slug, s), active: q === s.toLowerCase() })),
+  ];
 
   return (
     <>
-      <section className="container shop-head">
-        <div className="shop-head__main">
-          <div className="mono-label">
-            <Link href="/" className="crumb">INDEX</Link> / {c.name.toUpperCase()}
-          </div>
-          <h1 className="serif shop-head__title">
-            {c.name}
-            <em className="shop-head__count">({c.count})</em>
-          </h1>
-        </div>
-        <div className="shop-head__aside">
-          {c.description && <p className="body-copy">{c.description}</p>}
-          {c.heroPattern === "ASOOKE" ? (
-            <div className="shop-head__arch shop-head__arch--asooke" aria-hidden><AsookeStripe height={128} /></div>
-          ) : (
-            <div className="shop-head__arch" aria-hidden><AdirePattern width={96} height={128} /></div>
-          )}
-        </div>
-      </section>
-      <ShopView slug={slug} facets={facets} products={products.items} total={products.total} page={page} showEdit={!c.isDrop} />
+      <CategoryHeader title={c.name} intro={c.description} rail={rail} />
+      <ShopView slug={slug} facets={facets} products={products.items} total={products.total} page={page} featured={!c.isDrop} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -78,7 +68,7 @@ export default async function CollectionPageRoute({ params, searchParams }: Prop
             "@type": "CollectionPage",
             name: c.name,
             url: `${SITE_URL}/c/${slug}`,
-            breadcrumb: { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Index", item: SITE_URL }, { "@type": "ListItem", position: 2, name: c.name }] },
+            breadcrumb: { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL }, { "@type": "ListItem", position: 2, name: c.name }] },
           }).replace(/</g, "\\u003c"),
         }}
       />

@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 
-/** Delivery-method style row: 16px ring, name + mono meta, right value; selected row tinted --wash. */
+/** Radio row (delivery method, payment provider, reasons): 16px ring, title + 12px soft meta, right-aligned aside, hairline below. */
 export function RadioRow({ name, value, checked, onChange, title, meta, aside, disabled }: {
   name: string;
   value: string;

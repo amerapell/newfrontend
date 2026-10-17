@@ -1,140 +1,123 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { HeartIcon } from "@/components/chrome/Icons";
-import { Tag } from "@/components/ui/Tag";
-import { WasPrice } from "@/components/ui/Price";
-import { useCart } from "@/context/CartContext";
+import { BookmarkIcon } from "@/components/chrome/Icons";
 import { useWishlist } from "@/context/WishlistContext";
 import { naira } from "@/lib/format";
-import { iconKind, tagFor } from "@/lib/product";
-import { startProductTransition } from "@/lib/motion";
-import type { Product, ProductCard as Card } from "@/lib/types";
+import { fabricOf, iconKind } from "@/lib/product";
+import type { ProductCard as Card } from "@/lib/types";
 import { ProductImage } from "./ProductImage";
-import { loadProduct } from "./quickAddCache";
 
-/** Frosted QUICK ADD size strip — loads variants lazily on first hover/focus. */
-function QuickAdd({ slug, name }: { slug: string; name: string }) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [err, setErr] = useState(false);
-  const { add, busy } = useCart();
-  const started = useRef(false);
+export const CARD_SIZES = "(max-width: 1023px) 50vw, 25vw";
+const FEATURED_SIZES = "(max-width: 1023px) 100vw, 50vw";
+const MAX_BARS = 5;
 
-  const ensure = () => {
-    if (started.current) return;
-    started.current = true;
-    loadProduct(slug).then(setProduct).catch(() => setErr(true));
-  };
+/** One 13px label, top-left of the image (§6): New · Notify me (sold out) · Last pieces · Drop. Sale has none. */
+export function cardLabel(p: Pick<Card, "badge" | "inStock">): string | null {
+  if (!p.inStock || p.badge === "SOLD_OUT") return "Notify me";
+  switch (p.badge) {
+    case "LOW_STOCK":
+      return "Last pieces";
+    case "DROP":
+      return "Drop";
+    case "NEW":
+      return "New";
+    default:
+      return null;
+  }
+}
 
-  const sizes = product?.options.sizes ?? [];
-  const availFor = (s: string) => product!.variants.filter((v) => v.size === s).reduce((n, v) => n + v.available, 0);
-  const addSize = (s: string | null, el: HTMLElement) => {
-    if (!product) return;
-    const v = product.variants.find((x) => (s ? x.size === s : true) && x.available > 0);
-    if (v) void add(v.id, 1, { origin: el, label: name });
-  };
-
+/** Bookmark (ACC-3 wishlist), filled when saved. Guests save locally, customers to their account. */
+export function WishlistButton({ product, className = "" }: { product: Pick<Card, "id" | "name">; className?: string }) {
+  const { has, toggle } = useWishlist();
+  const saved = has(product.id);
   return (
-    <div className="card__quick" onMouseEnter={ensure} onFocus={ensure}>
-      <span className="mono-xs">QUICK ADD</span>
-      <span className="card__quick-sizes">
-        {!product && !err && <span className="mono-xs" aria-live="polite">…</span>}
-        {err && <span className="mono-xs">Unavailable</span>}
-        {product && sizes.length === 0 && (
-          <button type="button" className="qa-size qa-size--wide" disabled={busy || !product.inStock} onClick={(e) => addSize(null, e.currentTarget)} aria-label={`Add ${name} to bag`}>
-            Add +
-          </button>
-        )}
-        {product &&
-          sizes.slice(0, 6).map((s) => {
-            const out = availFor(s) <= 0;
-            return (
-              <button key={s} type="button" className={`qa-size${out ? " is-out" : ""}`} disabled={out || busy} onClick={(e) => addSize(s, e.currentTarget)} aria-label={out ? `${s}, sold out` : `Add ${name} in ${s}`}>
-                {s}
-              </button>
-            );
-          })}
-      </span>
-    </div>
+    <button
+      type="button"
+      className={`wish-btn${saved ? " is-on" : ""} ${className}`}
+      aria-label={saved ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+      aria-pressed={saved}
+      onClick={() => void toggle(product)}
+    >
+      <BookmarkIcon filled={saved} />
+    </button>
   );
 }
 
-export function ProductCard({ product: p, priority, sizes }: { product: Card; priority?: boolean; sizes?: string }) {
-  const router = useRouter();
-  const media = useRef<HTMLDivElement>(null);
-  const tag = tagFor(p);
-  const sale = p.compareAtKobo != null && p.compareAtKobo > p.priceKobo;
-  const { has, toggle } = useWishlist();
-  const saved = has(p.id);
+/** "₦ 62,500 ₦ 78,000" — sale price in ink, the compare-at struck in grey after it (§6). */
+export function PriceLine({ priceKobo, compareAtKobo, className = "" }: { priceKobo: number; compareAtKobo: number | null | undefined; className?: string }) {
+  const sale = compareAtKobo != null && compareAtKobo > priceKobo;
+  return (
+    <span className={`price-line tnum ${className}`}>
+      {sale && <span className="sr-only">Sale price </span>}
+      {naira(priceKobo)}
+      {sale && (
+        <>
+          {" "}
+          <s className="price-line__was">
+            <span className="sr-only">was </span>
+            {naira(compareAtKobo)}
+          </s>
+        </>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Product card (§6): 4:5 image on --stage (cross-fades to the second, worn/detail image on desktop hover),
+ * one 13px label top-left, bookmark top-right on hover, caption name / material / price / colour bars.
+ *  variant="featured" — the large listing piece: shows the worn image.
+ *  variant="compact"  — search drawer.
+ */
+export function ProductCard({
+  product: p,
+  priority,
+  sizes,
+  variant = "default",
+  className = "",
+}: {
+  product: Card;
+  priority?: boolean;
+  sizes?: string;
+  variant?: "default" | "featured" | "compact";
+  className?: string;
+}) {
   const href = `/p/${p.slug}`;
   const kind = iconKind(p);
-  const second = p.images[1]?.url;
-
-  const onNav = (e: React.MouseEvent) => {
-    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    startProductTransition(p.slug, media.current, () => router.push(href));
-  };
+  const featured = variant === "featured";
+  const label = cardLabel(p);
+  const first = p.images[0];
+  const second = p.images[1];
+  const main = featured && second?.url ? second : first;
+  const imgSizes = sizes ?? (featured ? FEATURED_SIZES : CARD_SIZES);
+  const bars = p.colours.slice(0, MAX_BARS);
+  const more = p.colours.length - bars.length;
+  const material = fabricOf(p.material);
 
   return (
-    <article className={`card${tag?.soldOut ? " is-out" : ""}`} onMouseEnter={() => p.inStock && loadProduct(p.slug).catch(() => {})}>
-      <div className="card__mediawrap">
-        <Link href={href} className="card__media" onClick={onNav} tabIndex={-1} aria-hidden>
-          <div ref={media} className="card__img">
-            <ProductImage src={p.images[0]?.url} alt={p.images[0]?.alt || p.name} kind={kind} priority={priority} sizes={sizes} />
-          </div>
-          {second && (
-            <div className="card__img card__img--second">
-              <ProductImage src={second} alt="" kind={kind} sizes={sizes} />
-            </div>
+    <article className={`pcard pcard--${variant} ${className}`}>
+      <Link href={href} className="pcard__link">
+        <span className="pcard__media">
+          <ProductImage src={main?.url} alt={main?.alt || p.name} kind={kind} priority={priority} sizes={imgSizes} className="pcard__img" />
+          {!featured && second?.url && <ProductImage src={second.url} alt="" kind={kind} sizes={imgSizes} className="pcard__img pcard__img--alt" />}
+          {label && <span className="pcard__label">{label}</span>}
+        </span>
+        <span className="pcard__cap">
+          <span className="pcard__name">{p.name}</span>
+          {material && <span className="pcard__mat">{material}</span>}
+          <PriceLine priceKobo={p.priceKobo} compareAtKobo={p.compareAtKobo} className="pcard__price" />
+          {bars.length > 1 && (
+            <span className="pcard__bars">
+              <span className="sr-only">{`${p.colours.length} colours: ${p.colours.map((c) => c.name).join(", ")}`}</span>
+              {bars.map((c, i) => (
+                <span key={c.name} className={`pcard__bar${i === 0 ? " is-on" : ""}`} style={{ background: c.hex }} title={c.name} aria-hidden />
+              ))}
+              {more > 0 && <span className="pcard__more" aria-hidden>+{more}</span>}
+            </span>
           )}
-          <span className="card__no">{p.number}</span>
-          {tag && <Tag label={tag.label} dot={tag.dot} className="card__tag" />}
-        </Link>
-        <button type="button" className={`card__save${saved ? " is-on" : ""}`} aria-label={saved ? `Remove ${p.name} from saved` : `Save ${p.name}`} aria-pressed={saved} onClick={() => toggle(p)}>
-          <HeartIcon filled={saved} />
-        </button>
-        {p.inStock && <QuickAdd slug={p.slug} name={p.name} />}
-      </div>
-      <Link href={href} className="card__info" onClick={onNav}>
-        <span className="card__row">
-          <span className="card__name">{p.name}</span>
-          <span className={`card__price tnum${sale ? " red" : ""}`}>
-            {sale && <span className="sr-only">Sale price </span>}
-            {naira(p.priceKobo)}
-          </span>
         </span>
-        <span className="card__row card__row--meta">
-          <span className="meta">{p.material}</span>
-          <span className="card__dots">
-            {p.colours.slice(0, 4).map((c) => (
-              <span key={c.name} className="dot10" style={{ background: c.hex }} title={c.name}>
-                <span className="sr-only">{c.name}</span>
-              </span>
-            ))}
-            {sale && <WasPrice kobo={p.compareAtKobo!} />}
-          </span>
-        </span>
-        {tag?.soldOut && <span className="sr-only">Sold out</span>}
       </Link>
+      <WishlistButton product={p} className="pcard__wish" />
     </article>
-  );
-}
-
-/** Lighter card used by "Complete the look" (no tags/quick add — per ProductV2). */
-export function LookCard({ product: p }: { product: Card }) {
-  return (
-    <Link href={`/p/${p.slug}`} className="look-card">
-      <div className="look-card__img">
-        <ProductImage src={p.images[0]?.url} alt={p.images[0]?.alt || p.name} kind={iconKind(p)} iconSize={48} />
-        <span className="card__no">{p.number}</span>
-      </div>
-      <span className="card__row">
-        <span className="card__name">{p.name}</span>
-        <span className="tnum">{naira(p.priceKobo)}</span>
-      </span>
-      <span className="meta">{p.material?.split(" · ")[0]}</span>
-    </Link>
   );
 }

@@ -4,8 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckRow, FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
-import { adminApi } from "@/lib/api";
-import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, slugify, upper } from "@/lib/format";
+import { adminApi, uploadImage } from "@/lib/api";
+import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, slugify } from "@/lib/format";
 import type { AdminCollection, ContentPage, DeliveryZone, Discount, DiscountType, ExchangeStatus, FaqItemAdmin, StoreSettings } from "@/lib/types";
 import { AdminHead, setAdminTotpFlag, useAdmin, useAsync } from "./AdminShell";
 
@@ -46,21 +46,21 @@ export function ExchangesAdmin() {
   };
   return (
     <>
-      <AdminHead index={`EXCHANGES · ${data?.length ?? "…"}`} title={<>Exchange <em>requests</em></>} />
+      <AdminHead index={`Exchanges · ${data?.length ?? "…"}`} title={<>Exchange <em>requests</em></>} />
       <div className="admin-filters">
         <select className="admin-input" value={status} onChange={(e) => router.replace(`/admin/exchanges${e.target.value ? `?status=${e.target.value}` : ""}`)} aria-label="Status">
           <option value="">All statuses</option>
           {EX_STATUSES.map((s) => <option key={s} value={s}>{EXCHANGE_STATUS_LABEL[s]}</option>)}
         </select>
       </div>
-      {loading && !data && <p className="mono-label">LOADING…</p>}
+      {loading && !data && <p className="mono-label">Loading…</p>}
       <ul className="admin-list">
         {data?.map((e) => (
           <li key={e.id} className="admin-card">
             <div className="row between wrap gap-12">
               <div className="stack">
                 <Link href={`/admin/exchanges/${e.id}`} className="serif admin-list__title">{e.number}</Link>
-                <span className="mono-xs">ORDER {e.orderNumber} · {upper(longDate(e.createdAt))}{e.email ? ` · ${e.email.toUpperCase()}` : ""}</span>
+                <span className="mono-xs">Order {e.orderNumber} · {longDate(e.createdAt)}{e.email ? ` · ${e.email}` : ""}</span>
               </div>
               <span className="row gap-12">
                 <span className={`status-pill status-pill--${e.status.toLowerCase()}`}>{EXCHANGE_STATUS_LABEL[e.status]}</span>
@@ -69,7 +69,7 @@ export function ExchangesAdmin() {
               </span>
             </div>
             <p><b>{e.reason}</b>{e.note ? ` — ${e.note}` : ""}</p>
-            <p className="mono-xs">{e.items.map((i) => `${i.name} × ${i.quantity} (${naira(i.valueKobo)})`).join(" · ").toUpperCase()}</p>
+            <p className="mono-xs">{e.items.map((i) => `${i.name} × ${i.quantity} (${naira(i.valueKobo)})`).join(" · ")}</p>
             {e.photoUrls.length > 0 && (
               <div className="row gap-8">
                 {e.photoUrls.map((u) => (
@@ -82,7 +82,7 @@ export function ExchangesAdmin() {
             )}
             <ol className="ex-timeline">
               {e.history.map((h, k) => (
-                <li key={k}><span className="mono-xs">{upper(longDate(h.at))}</span> {EXCHANGE_STATUS_LABEL[h.status]}{h.note ? ` — ${h.note}` : ""}</li>
+                <li key={k}><span className="mono-xs">{longDate(h.at)}</span> {EXCHANGE_STATUS_LABEL[h.status]}{h.note ? ` — ${h.note}` : ""}</li>
               ))}
             </ol>
             {!["COMPLETED", "DECLINED"].includes(e.status) && (
@@ -108,51 +108,109 @@ export function ExchangesAdmin() {
 
 /* ---------------- Collections ---------------- */
 
+function HeroImageField({ value, onChange }: { value: string | null | undefined; onChange: (url: string | null) => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="hero-field">
+      <span className="hero-field__label">Hero image · home panel and menu feature (landscape, at least 1600 × 1000)</span>
+      <div className="hero-field__img">
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="" />
+        ) : (
+          <span className="t-small t-grey">No image — the home panel shows a plain ground</span>
+        )}
+      </div>
+      <div className="row gap-16">
+        <label className="u-link">
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setBusy(true);
+              try {
+                onChange(await uploadImage(f));
+              } catch (x) {
+                toast.show({ message: apiMessage(x, `Couldn't upload ${f.name}`), tone: "error" });
+              } finally {
+                setBusy(false);
+                e.target.value = "";
+              }
+            }}
+          />
+          {busy ? "Uploading…" : value ? "Replace image" : "Upload image"}
+        </label>
+        {value && <button type="button" className="u-link" onClick={() => onChange(null)}>Remove</button>}
+      </div>
+    </div>
+  );
+}
+
 export function CollectionsAdmin() {
   const { data, setData } = useAsync(() => adminApi.collections(), []);
   const mutate = useMutate();
   const [editing, setEditing] = useState<Partial<AdminCollection> | null>(null);
   const save = async () => {
     if (!editing?.name) return;
-    const body = { ...editing, slug: editing.slug || slugify(editing.name) };
+    const body: Partial<AdminCollection> = {
+      name: editing.name,
+      slug: editing.slug || slugify(editing.name),
+      description: editing.description ?? null,
+      isDrop: !!editing.isDrop,
+      goLiveAt: editing.goLiveAt ?? null,
+      heroImageUrl: editing.heroImageUrl ?? null,
+      homeOrder: editing.homeOrder ?? null,
+      tagline: editing.tagline?.trim() || null,
+    };
     const r = editing.id ? await mutate(() => adminApi.updateCollection(editing.id!, body), "Saved.") : await mutate(() => adminApi.createCollection(body), "Created.");
     if (r && data) {
-      setData(editing.id ? data.map((c) => (c.id === r.id ? r : c)) : [...data, r]);
+      setData(editing.id ? data.map((c) => (c.id === r.id ? { ...c, ...r } : c)) : [...data, r]);
       setEditing(null);
     }
   };
   return (
     <>
-      <AdminHead index="COLLECTIONS" title={<>Collections &amp; <em>drops</em></>} actions={<button className="btn btn--short" onClick={() => setEditing({ name: "", slug: "", description: "", isDrop: false, goLiveAt: null, heroPattern: null })}>New collection +</button>} />
+      <AdminHead index="Collections" title="Collections & drops" actions={<button className="btn btn--primary" onClick={() => setEditing({ name: "", slug: "", description: "", isDrop: false, goLiveAt: null, heroImageUrl: null, homeOrder: null, tagline: null })}>New collection</button>} />
       {editing && (
         <section className="admin-card">
           <div className="field-grid field-grid--200">
-            <FieldBox label="NAME" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-            <FieldBox label="SLUG" value={editing.slug ?? ""} placeholder={slugify(editing.name ?? "")} onChange={(e) => setEditing({ ...editing, slug: slugify(e.target.value) })} />
-            <SelectBox label="HERO PATTERN" value={editing.heroPattern ?? ""} onChange={(e) => setEditing({ ...editing, heroPattern: (e.target.value || null) as AdminCollection["heroPattern"] })}>
-              <option value="">None</option>
-              <option value="ADIRE">Adire Indigo</option>
-              <option value="ASOOKE">Aso-oke stripe</option>
-            </SelectBox>
-            <FieldBox label="GO LIVE AT · DROPS" type="datetime-local" value={editing.goLiveAt ? editing.goLiveAt.slice(0, 16) : ""} onChange={(e) => setEditing({ ...editing, goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-            <TextAreaBox full label="DESCRIPTION" rows={2} value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
+            <FieldBox label="Name" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+            <FieldBox label="Slug" value={editing.slug ?? ""} placeholder={slugify(editing.name ?? "")} onChange={(e) => setEditing({ ...editing, slug: slugify(e.target.value) })} />
+            <FieldBox
+              label="Home order · empty = not on the home page"
+              inputMode="numeric"
+              value={editing.homeOrder != null ? String(editing.homeOrder) : ""}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                setEditing({ ...editing, homeOrder: v === "" ? null : Number(v) });
+              }}
+            />
+            <FieldBox label="Hero link label · default “Discover the collection”" value={editing.tagline ?? ""} maxLength={80} onChange={(e) => setEditing({ ...editing, tagline: e.target.value })} />
+            <FieldBox label="Go live at · drops" type="datetime-local" value={editing.goLiveAt ? editing.goLiveAt.slice(0, 16) : ""} onChange={(e) => setEditing({ ...editing, goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+            <TextAreaBox full label="Description" rows={2} value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
           </div>
-          <CheckRow checked={!!editing.isDrop} onChange={(v) => setEditing({ ...editing, isDrop: v })} id="isdrop" sub="SCHEDULED; GOES LIVE AT THE TIME ABOVE, WITH COUNTDOWN">This is a drop</CheckRow>
-          <div className="row gap-12"><button className="btn btn--short" onClick={save}>Save</button><button className="ap-link small-link" onClick={() => setEditing(null)}>Cancel</button></div>
+          <HeroImageField value={editing.heroImageUrl} onChange={(url) => setEditing({ ...editing, heroImageUrl: url })} />
+          <CheckRow checked={!!editing.isDrop} onChange={(v) => setEditing({ ...editing, isDrop: v })} id="isdrop" sub="Scheduled; goes live at the time above, with a countdown. A live or upcoming drop is always the first home panel.">This is a drop</CheckRow>
+          <div className="row gap-16"><button className="btn btn--primary" onClick={save}>Save</button><button className="u-link" onClick={() => setEditing(null)}>Cancel</button></div>
         </section>
       )}
       <table className="admin-table">
-        <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th>Drop</th><th /></tr></thead>
+        <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th className="num">Home</th><th>Drop</th><th /></tr></thead>
         <tbody>
           {data?.map((c) => (
             <tr key={c.id}>
               <td>{c.name}</td>
-              <td className="mono-xs">/c/{c.slug}</td>
+              <td className="t-grey">/c/{c.slug}</td>
               <td className="num tnum">{c.productCount ?? c.count}</td>
-              <td className="mono-xs">{c.isDrop ? `LIVE ${c.goLiveAt ? upper(longDate(c.goLiveAt)) : "—"}` : ""}</td>
+              <td className="num tnum">{c.homeOrder ?? "—"}</td>
+              <td className="t-grey">{c.isDrop ? `Live ${c.goLiveAt ? longDate(c.goLiveAt) : "—"}` : ""}</td>
               <td className="num">
-                <button className="ap-link small-link" onClick={() => setEditing(c)}>Edit</button>{" "}
-                <button className="ap-link small-link muted" onClick={async () => { if (confirm(`Delete ${c.name}? Products stay.`) && (await mutate(() => adminApi.deleteCollection(c.id), "Deleted.")) !== null) setData(data.filter((x) => x.id !== c.id)); }}>Delete</button>
+                <button className="u-link" onClick={() => setEditing(c)}>Edit</button>{" "}
+                <button className="u-link t-grey" onClick={async () => { if (confirm(`Delete ${c.name}? Products stay.`) && (await mutate(() => adminApi.deleteCollection(c.id), "Deleted.")) !== null) setData(data.filter((x) => x.id !== c.id)); }}>Delete</button>
               </td>
             </tr>
           ))}
@@ -171,9 +229,9 @@ export function DiscountsAdmin() {
   const [d, setD] = useState<Omit<Discount, "id">>(blank);
   return (
     <>
-      <AdminHead index="DISCOUNTS" title={<>Promo <em>codes</em></>} />
+      <AdminHead index="Discounts" title={<>Promo <em>codes</em></>} />
       <section className="admin-card">
-        <div className="mono-label admin-card__head">NEW CODE</div>
+        <div className="mono-label admin-card__head">New code</div>
         <form
           className="field-grid field-grid--200"
           onSubmit={async (e) => {
@@ -186,19 +244,19 @@ export function DiscountsAdmin() {
             }
           }}
         >
-          <FieldBox label="CODE" value={d.code} onChange={(e) => setD({ ...d, code: e.target.value.toUpperCase() })} />
-          <SelectBox label="TYPE" value={d.type} onChange={(e) => setD({ ...d, type: e.target.value as DiscountType })}>
+          <FieldBox label="Code" value={d.code} onChange={(e) => setD({ ...d, code: e.target.value.toUpperCase() })} />
+          <SelectBox label="Type" value={d.type} onChange={(e) => setD({ ...d, type: e.target.value as DiscountType })}>
             <option value="PERCENT">Percentage</option>
             <option value="FIXED">Fixed amount (₦)</option>
             <option value="FREE_DELIVERY">Free delivery</option>
           </SelectBox>
           {d.type !== "FREE_DELIVERY" && (
-            <FieldBox label={d.type === "PERCENT" ? "PERCENT OFF" : "AMOUNT OFF ₦"} inputMode="numeric" value={d.type === "PERCENT" ? String(d.value) : nairaIn(d.value)} onChange={(e) => setD({ ...d, value: d.type === "PERCENT" ? Math.min(100, Number(e.target.value.replace(/\D/g, ""))) : koboIn(e.target.value) })} />
+            <FieldBox label={d.type === "PERCENT" ? "Percent off" : "Amount off ₦"} inputMode="numeric" value={d.type === "PERCENT" ? String(d.value) : nairaIn(d.value)} onChange={(e) => setD({ ...d, value: d.type === "PERCENT" ? Math.min(100, Number(e.target.value.replace(/\D/g, ""))) : koboIn(e.target.value) })} />
           )}
-          <FieldBox label="MIN SUBTOTAL ₦ · OPTIONAL" inputMode="numeric" value={nairaIn(d.minSubtotalKobo)} onChange={(e) => setD({ ...d, minSubtotalKobo: koboIn(e.target.value) || null })} />
-          <FieldBox label="MAX USES · OPTIONAL" inputMode="numeric" value={d.maxUses ? String(d.maxUses) : ""} onChange={(e) => setD({ ...d, maxUses: Number(e.target.value.replace(/\D/g, "")) || null })} />
-          <FieldBox label="STARTS" type="date" value={d.startsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-          <FieldBox label="ENDS" type="date" value={d.endsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+          <FieldBox label="Min subtotal ₦ · optional" inputMode="numeric" value={nairaIn(d.minSubtotalKobo)} onChange={(e) => setD({ ...d, minSubtotalKobo: koboIn(e.target.value) || null })} />
+          <FieldBox label="Max uses · optional" inputMode="numeric" value={d.maxUses ? String(d.maxUses) : ""} onChange={(e) => setD({ ...d, maxUses: Number(e.target.value.replace(/\D/g, "")) || null })} />
+          <FieldBox label="Starts" type="date" value={d.startsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+          <FieldBox label="Ends" type="date" value={d.endsAt?.slice(0, 10) ?? ""} onChange={(e) => setD({ ...d, endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
           <div className="field-wrap"><button className="btn btn--short">Create code</button></div>
         </form>
       </section>
@@ -212,7 +270,7 @@ export function DiscountsAdmin() {
               <td className="num tnum">{x.type === "PERCENT" ? `${x.value}%` : x.type === "FIXED" ? naira(x.value) : "—"}</td>
               <td className="num tnum">{x.minSubtotalKobo ? naira(x.minSubtotalKobo) : "—"}</td>
               <td className="num tnum">{x.uses ?? 0}{x.maxUses ? ` / ${x.maxUses}` : ""}</td>
-              <td className="mono-xs">{x.startsAt ? upper(longDate(x.startsAt)) : "NOW"} → {x.endsAt ? upper(longDate(x.endsAt)) : "∞"}</td>
+              <td className="mono-xs">{x.startsAt ? longDate(x.startsAt) : "Now"} → {x.endsAt ? longDate(x.endsAt) : "∞"}</td>
               <td className="num"><button className="ap-link small-link muted" onClick={async () => { if ((await mutate(() => adminApi.deleteDiscount(x.id), "Deleted.")) !== null) setData(data.filter((y) => y.id !== x.id)); }}>Delete</button></td>
             </tr>
           ))}
@@ -230,7 +288,7 @@ export function ZonesAdmin() {
   const [draft, setDraft] = useState<Record<string, Partial<DeliveryZone>>>({});
   return (
     <>
-      <AdminHead index="DELIVERY ZONES" title={<>Delivery &amp; <em>fees</em></>} />
+      <AdminHead index="Delivery zones" title={<>Delivery &amp; <em>fees</em></>} />
       <table className="admin-table">
         <thead><tr><th>Zone</th><th>Name</th><th>ETA text</th><th className="num">Fee ₦</th><th>Active</th><th /></tr></thead>
         <tbody>
@@ -287,7 +345,7 @@ function TotpSetupCard() {
   };
   return (
     <section className={`admin-card${params.get("setup") === "totp" ? " admin-card--focus" : ""}`} id="security">
-      <div className="mono-label admin-card__head">SECURITY · TWO-STEP VERIFICATION (TOTP)</div>
+      <div className="mono-label admin-card__head">Security · two-step verification (TOTP)</div>
       {state === "done" || state === "already" ? (
         <p className="form-ok">Two-step verification is enabled. You&apos;ll be asked for a code at every sign-in.</p>
       ) : !setup ? (
@@ -298,11 +356,11 @@ function TotpSetupCard() {
       ) : (
         <div className="stack gap-12">
           <div className="totp-setup">
-            <span className="mono-xs">1 — ADD THIS KEY TO YOUR AUTHENTICATOR APP</span>
+            <span className="mono-xs">1 — Add this key to your authenticator app</span>
             <code className="totp-setup__secret">{setup.secret.replace(/(.{4})/g, "$1 ").trim()}</code>
             <a href={setup.otpauthUrl} className="ap-link small-link">Open in authenticator app</a>
           </div>
-          <span className="mono-xs">2 — ENTER THE 6-DIGIT CODE IT SHOWS</span>
+          <span className="mono-xs">2 — Enter the 6-digit code it shows</span>
           <div className="row gap-12">
             <input className="admin-input" inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} aria-label="Authenticator code" />
             <button className="btn btn--short" disabled={code.replace(/\s/g, "").length !== 6} onClick={enable}>Turn on</button>
@@ -320,54 +378,54 @@ export function SettingsAdmin() {
   useEffect(() => {
     if (data) setS(data);
   }, [data]);
-  if (!s) return <p className="mono-label">LOADING…</p>;
+  if (!s) return <p className="mono-label">Loading…</p>;
   const set = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) => setS({ ...s, [k]: v });
   const drop = s.drop ?? { title: "", collectionSlug: "", goLiveAt: null, firstRunTotal: 0, firstRunLeft: 0 };
   const setDrop = (p: Partial<typeof drop>) => set("drop", { ...drop, ...p });
   return (
     <>
-      <AdminHead index="SETTINGS" title={<>Store <em>settings</em></>} actions={<button className="btn btn--short" onClick={() => mutate(() => adminApi.updateSettings(s), "Settings saved.")}>Save settings</button>} />
+      <AdminHead index="Settings" title={<>Store <em>settings</em></>} actions={<button className="btn btn--short" onClick={() => mutate(() => adminApi.updateSettings(s), "Settings saved.")}>Save settings</button>} />
       <div className="admin-form">
         <TotpSetupCard />
         <section className="admin-card">
-          <div className="mono-label admin-card__head">PAYMENTS</div>
-          <CheckRow checked={s.paystackEnabled} onChange={(v) => set("paystackEnabled", v)} id="ps" sub="NAIRA CARD · BANK TRANSFER · USSD">Paystack enabled</CheckRow>
-          <CheckRow checked={s.bachsEnabled} onChange={(v) => set("bachsEnabled", v)} id="bx" sub="FOREIGN CARDS · TRANSFER · USDT/USDC · SETTLES IN NAIRA">Bachs enabled</CheckRow>
+          <div className="mono-label admin-card__head">Payments</div>
+          <CheckRow checked={s.paystackEnabled} onChange={(v) => set("paystackEnabled", v)} id="ps" sub="Naira card · bank transfer · ussd">Paystack enabled</CheckRow>
+          <CheckRow checked={s.bachsEnabled} onChange={(v) => set("bachsEnabled", v)} id="bx" sub="Foreign cards · transfer · USDT/USDC · settles in naira">Bachs enabled</CheckRow>
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">DELIVERY, EXCHANGES &amp; CREDIT</div>
+          <div className="mono-label admin-card__head">Delivery, exchanges &amp; credit</div>
           <div className="field-grid field-grid--200">
-            <FieldBox label="FREE DELIVERY OVER ₦ · BLANK = OFF" inputMode="numeric" value={nairaIn(s.freeDeliveryThresholdKobo)} onChange={(e) => set("freeDeliveryThresholdKobo", koboIn(e.target.value) || null)} />
-            <FieldBox label="EXCHANGE WINDOW · DAYS" inputMode="numeric" value={String(s.exchangeWindowDays)} onChange={(e) => set("exchangeWindowDays", Number(e.target.value.replace(/\D/g, "")) || 0)} />
-            <FieldBox label="CREDIT EXPIRY · DAYS · BLANK = NEVER" inputMode="numeric" value={s.creditExpiryDays ? String(s.creditExpiryDays) : ""} onChange={(e) => set("creditExpiryDays", Number(e.target.value.replace(/\D/g, "")) || null)} />
+            <FieldBox label="Free delivery over ₦ · blank = off" inputMode="numeric" value={nairaIn(s.freeDeliveryThresholdKobo)} onChange={(e) => set("freeDeliveryThresholdKobo", koboIn(e.target.value) || null)} />
+            <FieldBox label="Exchange window · days" inputMode="numeric" value={String(s.exchangeWindowDays)} onChange={(e) => set("exchangeWindowDays", Number(e.target.value.replace(/\D/g, "")) || 0)} />
+            <FieldBox label="Credit expiry · days · blank = never" inputMode="numeric" value={s.creditExpiryDays ? String(s.creditExpiryDays) : ""} onChange={(e) => set("creditExpiryDays", Number(e.target.value.replace(/\D/g, "")) || null)} />
           </div>
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">STORE &amp; CONTACT</div>
+          <div className="mono-label admin-card__head">Store &amp; contact</div>
           <div className="field-grid field-grid--200">
-            <FieldBox full label="PICKUP ADDRESS" value={s.pickupAddress} onChange={(e) => set("pickupAddress", e.target.value)} />
-            <FieldBox full label="OPENING HOURS" value={s.openingHours} onChange={(e) => set("openingHours", e.target.value)} />
-            <FieldBox label="WHATSAPP · 234…" value={s.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value.replace(/[^\d]/g, ""))} />
-            <FieldBox label="PHONE" value={s.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
-            <FieldBox label="EMAIL" type="email" value={s.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
-            <FieldBox label="INSTAGRAM URL" value={s.instagramUrl} onChange={(e) => set("instagramUrl", e.target.value)} />
-            <FieldBox label="TIKTOK URL" value={s.tiktokUrl} onChange={(e) => set("tiktokUrl", e.target.value)} />
+            <FieldBox full label="Pickup address" value={s.pickupAddress} onChange={(e) => set("pickupAddress", e.target.value)} />
+            <FieldBox full label="Opening hours" value={s.openingHours} onChange={(e) => set("openingHours", e.target.value)} />
+            <FieldBox label="WhatsApp · 234…" value={s.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value.replace(/[^\d]/g, ""))} />
+            <FieldBox label="Phone" value={s.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
+            <FieldBox label="Email" type="email" value={s.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
+            <FieldBox label="Instagram URL" value={s.instagramUrl} onChange={(e) => set("instagramUrl", e.target.value)} />
+            <FieldBox label="TikTok URL" value={s.tiktokUrl} onChange={(e) => set("tiktokUrl", e.target.value)} />
           </div>
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">TICKER · ONE MESSAGE PER LINE</div>
-          <TextAreaBox label="TICKER TEXT" rows={5} value={s.tickerText.join("\n")} onChange={(e) => set("tickerText", e.target.value.split("\n").map((x) => x.toUpperCase()))} />
+          <div className="mono-label admin-card__head">Ticker · one message per line</div>
+          <TextAreaBox label="Ticker text" rows={5} value={s.tickerText.join("\n")} onChange={(e) => set("tickerText", e.target.value.split("\n").map((x) => x.toUpperCase()))} />
         </section>
         <section className="admin-card">
-          <div className="mono-label admin-card__head">DROP / BANNER</div>
-          <CheckRow checked={!!s.drop} onChange={(v) => set("drop", v ? drop : null)} id="hasdrop" sub="SHOWS THE HOME HERO COUNTDOWN AND NAV LINK">Feature a drop</CheckRow>
+          <div className="mono-label admin-card__head">Drop / banner</div>
+          <CheckRow checked={!!s.drop} onChange={(v) => set("drop", v ? drop : null)} id="hasdrop" sub="Shows the home hero countdown and nav link">Feature a drop</CheckRow>
           {s.drop && (
             <div className="field-grid field-grid--200">
-              <FieldBox label="TITLE · e.g. The Night Edit" value={drop.title} onChange={(e) => setDrop({ title: e.target.value })} />
-              <FieldBox label="COLLECTION SLUG" value={drop.collectionSlug} onChange={(e) => setDrop({ collectionSlug: slugify(e.target.value) })} />
-              <FieldBox label="GOES LIVE" type="datetime-local" value={drop.goLiveAt ? drop.goLiveAt.slice(0, 16) : ""} onChange={(e) => setDrop({ goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
-              <FieldBox label="FIRST RUN · TOTAL" inputMode="numeric" value={String(drop.firstRunTotal)} onChange={(e) => setDrop({ firstRunTotal: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
-              <FieldBox label="FIRST RUN · LEFT" inputMode="numeric" value={String(drop.firstRunLeft)} onChange={(e) => setDrop({ firstRunLeft: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
+              <FieldBox label="Title · e.g. The Night Edit" value={drop.title} onChange={(e) => setDrop({ title: e.target.value })} />
+              <FieldBox label="Collection slug" value={drop.collectionSlug} onChange={(e) => setDrop({ collectionSlug: slugify(e.target.value) })} />
+              <FieldBox label="Goes live" type="datetime-local" value={drop.goLiveAt ? drop.goLiveAt.slice(0, 16) : ""} onChange={(e) => setDrop({ goLiveAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+              <FieldBox label="First run · total" inputMode="numeric" value={String(drop.firstRunTotal)} onChange={(e) => setDrop({ firstRunTotal: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
+              <FieldBox label="First run · left" inputMode="numeric" value={String(drop.firstRunLeft)} onChange={(e) => setDrop({ firstRunLeft: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
             </div>
           )}
         </section>
@@ -397,11 +455,11 @@ export function FaqAdmin() {
       {edit && (
         <section className="admin-card">
           <div className="field-grid field-grid--200">
-            <SelectBox label="GROUP" value={edit.group} onChange={(e) => setEdit({ ...edit, group: e.target.value })}>
+            <SelectBox label="Group" value={edit.group} onChange={(e) => setEdit({ ...edit, group: e.target.value })}>
               {groups.map((g) => <option key={g}>{g}</option>)}
             </SelectBox>
-            <FieldBox full label="QUESTION" value={edit.question ?? ""} onChange={(e) => setEdit({ ...edit, question: e.target.value })} />
-            <TextAreaBox full label="ANSWER" rows={4} value={edit.answer ?? ""} onChange={(e) => setEdit({ ...edit, answer: e.target.value })} />
+            <FieldBox full label="Question" value={edit.question ?? ""} onChange={(e) => setEdit({ ...edit, question: e.target.value })} />
+            <TextAreaBox full label="Answer" rows={4} value={edit.answer ?? ""} onChange={(e) => setEdit({ ...edit, answer: e.target.value })} />
           </div>
           <div className="row gap-12"><button className="btn btn--short" onClick={save}>Save</button><button className="ap-link small-link" onClick={() => setEdit(null)}>Cancel</button></div>
         </section>
@@ -444,7 +502,7 @@ export function PagesAdmin() {
   useEffect(() => setP(data), [data]);
   return (
     <>
-      <AdminHead index="PAGES" title={<>Content <em>pages</em></>} actions={p && <button className="btn btn--short" onClick={async () => { const r = await mutate(() => adminApi.updatePage(slug, { title: p.title, bodyMarkdown: p.bodyMarkdown }), "Page saved."); if (r) setP(r); }}>Save page</button>} />
+      <AdminHead index="Pages" title={<>Content <em>pages</em></>} actions={p && <button className="btn btn--short" onClick={async () => { const r = await mutate(() => adminApi.updatePage(slug, { title: p.title, bodyMarkdown: p.bodyMarkdown }), "Page saved."); if (r) setP(r); }}>Save page</button>} />
       <div className="chip-row">
         {slugs.map((s) => (
           <button key={s} className={`chip${s === slug ? " chip--on" : ""}`} onClick={() => setSlug(s)}>{s}</button>
@@ -452,12 +510,12 @@ export function PagesAdmin() {
       </div>
       {p ? (
         <section className="admin-card">
-          <FieldBox label="TITLE" value={p.title} onChange={(e) => setP({ ...p, title: e.target.value })} />
-          <TextAreaBox label="BODY · MARKDOWN (## HEADINGS, - LISTS, **BOLD**, | TABLES |)" rows={18} value={p.bodyMarkdown} onChange={(e) => setP({ ...p, bodyMarkdown: e.target.value })} className="admin-md" />
-          <p className="mono-xs">LAST UPDATED {upper(longDate(p.updatedAt))} · LIVE AT {slug === "about" ? "/about" : PAGE_SLUGS.includes(slug) ? `/policies/${slug}` : `GET /pages/${slug}`}</p>
+          <FieldBox label="Title" value={p.title} onChange={(e) => setP({ ...p, title: e.target.value })} />
+          <TextAreaBox label="Body · Markdown (## headings, - lists, **bold**, | tables |)" rows={18} value={p.bodyMarkdown} onChange={(e) => setP({ ...p, bodyMarkdown: e.target.value })} className="admin-md" />
+          <p className="mono-xs">Last updated {longDate(p.updatedAt)} · live at {slug === "about" ? "/about" : PAGE_SLUGS.includes(slug) ? `/policies/${slug}` : `GET /pages/${slug}`}</p>
         </section>
       ) : (
-        <p className="mono-label">LOADING…</p>
+        <p className="mono-label">Loading…</p>
       )}
     </>
   );

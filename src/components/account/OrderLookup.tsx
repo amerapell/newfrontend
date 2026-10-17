@@ -18,27 +18,22 @@ export function OrderLookup() {
 
   if (order) {
     return (
-      <div className="container lookup lookup--result">
-        <button className="ap-link small-link" onClick={() => { setOrder(null); setExchanging(false); }}>← Look up another order</button>
+      <div className="cm cm-page cm-narrow">
+        <button className="u-link" onClick={() => { setOrder(null); setExchanging(false); }}>Look up another order</button>
         {exchanging ? <ExchangeRequestForm order={order} email={email.trim()} /> : <OrderDetail order={order} />}
         {!exchanging && canExchange(order) && (
-          <button className="btn btn--short" onClick={() => setExchanging(true)}>Request an exchange →</button>
+          <button className="btn btn--primary" onClick={() => setExchanging(true)}>Request an exchange</button>
         )}
       </div>
     );
   }
 
   return (
-    <div className="container lookup">
-      <div className="lookup__intro">
-        <div className="mono-label">ORDERS · GUEST LOOKUP</div>
-        <h1 className="serif auth__title">
-          Find your <em>order</em>
-        </h1>
-        <p className="body-copy">Use the order number from your receipt (it starts with AP-) and the email you checked out with.</p>
-      </div>
+    <div className="cm cm-page cm-narrow">
+      <h1 className="cm-title">Track an order</h1>
+      <p>Use the order number from your receipt (it starts with AP-) and the email you checked out with.</p>
       <form
-        className="auth__panel stack gap-12"
+        className="cm-form"
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -52,10 +47,10 @@ export function OrderLookup() {
           }
         }}
       >
-        <FieldBox label="ORDER NUMBER" placeholder="AP-10511" value={number} onChange={(e) => setNumber(e.target.value)} required autoCapitalize="characters" />
-        <FieldBox label="EMAIL" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        {err && <p className="form-error" role="alert">{err}</p>}
-        <button className="btn btn--block" disabled={busy}><span>{busy ? "Looking…" : "Find order"}</span><span aria-hidden>→</span></button>
+        <FieldBox label="Order number" placeholder="AP-10511" value={number} onChange={(e) => setNumber(e.target.value)} required autoCapitalize="characters" />
+        <FieldBox label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        {err && <p className="cm-error" role="alert">{err}</p>}
+        <button className="btn btn--primary btn--block" disabled={busy}>{busy ? "Looking…" : "Find order"}</button>
       </form>
     </div>
   );

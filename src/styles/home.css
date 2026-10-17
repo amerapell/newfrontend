@@ -1,0 +1,77 @@
+/* ==========================================================================
+   Home — design v3 §7 Home: full-viewport hero panels, "New In" carousel,
+   editorial story panel, "Amerapelle at your service" cards.
+   ========================================================================== */
+.home { display: block; }
+
+/* ---------- Hero panels (100vh desktop, 80vh mobile) ---------- */
+.hero {
+  position: relative; display: block; overflow: hidden;
+  height: 100vh; height: 100svh; min-height: 520px;
+  background: var(--placeholder); color: var(--ink);
+}
+.hero__media { position: absolute; inset: 0; display: block; }
+.hero__media .photo { position: absolute; inset: 0; }
+.hero__media img { transition: transform 1200ms var(--ease); }
+/* subtle bottom gradient so white captions always read (§4, §9) */
+.hero--photo .hero__media::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .35) 100%);
+}
+/* first panel sits under the transparent header: a faint top shade keeps the white nav legible */
+.hero--photo:first-of-type .hero__media::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 180px; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, 0));
+}
+.hero--photo { color: var(--white); background: var(--espresso); }
+.hero--empty { background: var(--placeholder); color: var(--ink); }
+
+.hero__cap {
+  position: absolute; z-index: 2; left: var(--gutter); right: var(--gutter); bottom: 48px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  max-width: 640px; pointer-events: none;
+}
+.hero__cap > * { pointer-events: auto; }
+.hero__title { font-size: var(--fs-display); line-height: var(--lh); }
+.hero__clock { font-size: var(--fs-body); font-variant-numeric: tabular-nums lining-nums; }
+.hero__link { font-size: var(--fs-body); color: inherit; margin-top: 4px; }
+.hero--photo .hero__link { color: var(--white); }
+
+@media (hover: hover) {
+  .hero:has(.hero__link:hover) .hero__media img { transform: scale(1.015); }
+}
+@media (max-width: 1023px) {
+  .hero { height: 80vh; height: 80svh; min-height: 440px; }
+  .hero__cap { bottom: 32px; }
+}
+
+/* ---------- New In carousel (after panel 2) ---------- */
+.home__newin { padding-top: 80px; padding-bottom: 80px; }
+@media (max-width: 1023px) { .home__newin { padding-top: 56px; padding-bottom: 56px; } }
+
+/* ---------- Editorial story panel ---------- */
+.hero--story .hero__title { max-width: 520px; }
+
+/* ---------- "Amerapelle at your service" ---------- */
+.service { padding-top: 96px; padding-bottom: 120px; }
+.service__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 32px; }
+.service__card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.service__img {
+  position: relative; display: block; width: 100%; aspect-ratio: 3 / 2;
+  background: var(--stage); overflow: hidden; margin-bottom: 12px;
+}
+.service__img .photo--empty { background: var(--stage); }
+.service__icon { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink); }
+.service__icon svg { width: 28px; height: 28px; stroke-width: 1; }
+.service__card p { max-width: 360px; }
+.service__card .u-link { margin-top: 4px; }
+@media (max-width: 1023px) {
+  .service { padding-top: 64px; padding-bottom: 80px; }
+  .service__cards { grid-template-columns: 1fr; gap: 40px; margin-top: 24px; }
+}
+
+/* the first panel fills what is left of the viewport below the promo bar */
+:root:has(.promo) .home > .hero:first-of-type { height: calc(100vh - var(--promo-h)); height: calc(100svh - var(--promo-h)); }
+@media (max-width: 1023px) {
+  :root:has(.promo) .home > .hero:first-of-type { height: calc(80vh - var(--promo-h)); height: calc(80svh - var(--promo-h)); }
+}

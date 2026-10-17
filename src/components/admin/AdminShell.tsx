@@ -77,7 +77,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 
   if (isLogin) return <div className="admin admin--login">{children}</div>;
-  if (!ready) return <div className="admin"><p className="mono-label admin__loading">CHECKING SESSION…</p></div>;
+  if (!ready) return <div className="admin"><p className="mono-label admin__loading">Checking session…</p></div>;
   if (bare) return <Ctx.Provider value={{ signOut, onError }}>{children}</Ctx.Provider>;
 
   return (
@@ -88,7 +88,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden><path d="M4 9h16M4 15h10" /></svg>
           </button>
           <Link href="/admin" className="admin__mark" aria-label="Amerapelle admin"><Logo size={28} /></Link>
-          <span className="mono-label">ADMIN{isUsingMocks() ? " · MOCK DATA" : ""}</span>
+          <span className="mono-label">Admin{isUsingMocks() ? " · mock data" : ""}</span>
           <span className="admin__spacer" />
           <a href="/" target="_blank" rel="noopener" className="ap-link small-link">View store ↗</a>
           <button className="ap-link small-link" onClick={signOut}>Sign out</button>

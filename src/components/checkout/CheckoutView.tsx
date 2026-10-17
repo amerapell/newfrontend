@@ -1,43 +1,92 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { StepIndicator } from "@/components/chrome/CheckoutHeader";
-import { CheckRow, FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
-import { ProviderCard } from "@/components/ui/ProviderCard";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Check } from "@/components/cart/Check";
+import { CreditToggle, useCreditSource } from "@/components/cart/CreditToggle";
+import { FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Field";
 import { RadioRow } from "@/components/ui/RadioRow";
 import { ProductImage } from "@/components/product/ProductImage";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { accountApi, checkoutApi } from "@/lib/api";
-import { apiMessage, arrivalFromEta, localPhoneDisplay, naira, toE164NG, upper } from "@/lib/format";
+import { apiMessage, arrivalFromEta, localPhoneDisplay, naira, toE164NG } from "@/lib/format";
 import { useNgStates } from "@/lib/useNgStates";
 import { iconKind } from "@/lib/product";
 import type { Address, CheckoutQuote, DeliveryZone, PaymentProviderCode, ZoneCode } from "@/lib/types";
 
-const PROVIDERS: { code: PaymentProviderCode; name: string; tag: string; desc: string; short: string }[] = [
-  { code: "PAYSTACK", name: "Paystack", tag: "IN NAIRA", desc: "Card, bank transfer or USSD.", short: "Card · transfer · USSD" },
-  { code: "BACHS", name: "Bachs", tag: "FROM ABROAD", desc: "Card in your own currency, bank transfer or USDT / USDC.", short: "Your currency · USDT/USDC" },
+const PROVIDERS: { code: PaymentProviderCode; name: string; desc: string }[] = [
+  { code: "PAYSTACK", name: "Paystack", desc: "Cards, transfer, USSD in naira" },
+  { code: "BACHS", name: "Bachs", desc: "International cards, transfer, USDT/USDC" },
 ];
-
-const SHORT: Record<ZoneCode, string> = {
-  LAGOS_ISLAND: "Island",
-  LAGOS_MAINLAND: "Mainland",
-  LEKKI_AJAH: "Lekki–Ajah",
-  OTHER_STATES: "Other states",
-  PICKUP: "Pickup",
-};
 
 type Errors = Partial<Record<"email" | "phone" | "fullName" | "state" | "lga" | "area" | "street" | "landmark" | "provider" | "zone", string>>;
 
 const emptyAddress: Address = { fullName: "", phone: "", state: "Lagos", lga: "", area: "", street: "", landmark: "", note: "" };
+
+function Section({ n, id, title, children }: { n: number; id: string; title: string; children: ReactNode }) {
+  return (
+    <section className="cm-co__section" aria-labelledby={id}>
+      <h2 id={id} className="cm-co__h">
+        {n}. {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** Guest vs returning customer, inline at the top of checkout (§7 Checkout). */
+function CheckoutLogin({ onGuest }: { onGuest: (email: string) => void }) {
+  const { login } = useAuth();
+  const [mode, setMode] = useState<"guest" | "signin">("guest");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className="cm-co__login" aria-label="Guest checkout or sign in">
+      <div className="cm-co__modes" role="radiogroup" aria-label="How would you like to check out?">
+        <RadioRow name="co-mode" value="guest" checked={mode === "guest"} onChange={() => setMode("guest")} title="Checkout as guest" meta="You can create an account after your order." />
+        <RadioRow name="co-mode" value="signin" checked={mode === "signin"} onChange={() => setMode("signin")} title="Sign in" meta="For saved addresses and exchange credit." />
+      </div>
+      {mode === "signin" && (
+        <div className="cm-form">
+          <FieldBox label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <FieldBox label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {err && <p className="cm-error" role="alert">{err}</p>}
+          <button
+            type="button"
+            className="btn btn--secondary btn--block"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setErr(null);
+              try {
+                await login(email.trim(), password);
+                onGuest(email.trim());
+              } catch (x) {
+                setErr(apiMessage(x, "That email and password don't match."));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+          <Link href="/account?view=forgot" className="u-link cm-small">Forgot password?</Link>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
   const router = useRouter();
   const { settings } = useSettings();
   const { user, status } = useAuth();
   const { cart, ready, useCredit, setUseCredit } = useCart();
+  const source = useCreditSource();
   const enabled = PROVIDERS.filter((p) => (p.code === "PAYSTACK" ? settings.paystackEnabled : settings.bachsEnabled));
 
   const [email, setEmail] = useState("");
@@ -53,9 +102,10 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // default zone: Lekki–Ajah if present (design), else first
+  // default zone: Lekki–Ajah if present, else first
   useEffect(() => {
     if (zone || !zones.length) return;
     setZone((zones.find((z) => z.code === "LEKKI_AJAH") ?? zones[0]).code);
@@ -130,10 +180,10 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
   const creditApplied = quote?.creditAppliedKobo ?? 0;
   const due = quote?.amountDueKobo ?? Math.max(0, sub - discount + delivery);
   const providerName = enabled.find((p) => p.code === provider)?.name ?? "card";
-  const payLabel = due === 0 && lines.length ? "Place order — paid with credit" : `Pay with ${providerName}`;
+  const creditOnly = due === 0 && lines.length > 0;
+  const payLabel = submitting ? "Opening secure payment…" : creditOnly ? "Place order — paid with credit" : `Pay ${naira(due)}`;
   const n = cart?.itemCount ?? 0;
   const arrival = chosenZone && !pickup ? arrivalFromEta(chosenZone.etaText) : null;
-  const letter = (i: number) => String.fromCharCode(65 + i);
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -178,225 +228,188 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
 
   if (ready && !lines.length && !submitting) {
     return (
-      <div className="container checkout">
-        <StepIndicator step={2} />
-        <div className="empty">
-          <span className="serif empty__title">Your bag is <em>empty.</em></span>
-          <Link href="/c/new-in" className="ap-link">Shop new in →</Link>
+      <div className="cm cm-page">
+        <h1 className="cm-title">Checkout</h1>
+        <div className="cm-empty">
+          <p>Your bag is empty.</p>
+          <Link href="/c/new-in" className="u-link">Continue shopping</Link>
         </div>
       </div>
     );
   }
 
+  const summary = (
+    <>
+      <ul className="cm-sumlines">
+        {lines.map((l) => (
+          <li key={l.id} className="cm-sumline">
+            <span className="cm-sumline__img">
+              <ProductImage src={l.imageUrl} alt="" kind={iconKind({ material: l.material, name: l.name })} iconSize={20} sizes="56px" />
+              {l.quantity > 1 && <span className="cm-sumline__qty" aria-label={`Quantity ${l.quantity}`}>{l.quantity}</span>}
+            </span>
+            <span className="cm-sumline__info">
+              <span>{l.name}</span>
+              <span className="cm-soft">{[l.colour, l.size].filter(Boolean).join(" / ")}{l.quantity > 1 ? ` · Qty ${l.quantity}` : ""}</span>
+              {l.problem && <span className="cm-alert">{l.problem === "SOLD_OUT" ? "Sold out" : `Only ${l.available} left`}</span>}
+            </span>
+            <span className="tnum">{naira(l.lineKobo)}</span>
+          </li>
+        ))}
+      </ul>
+      {problems.length > 0 && (
+        <p className="cm-alert" role="alert">
+          {blocked ? "Some pieces sold out while you were shopping." : "Stock changed on some pieces."} <Link href="/bag" className="u-link">Review your bag</Link>
+        </p>
+      )}
+      <div className="cm-rows">
+        <div className="cm-row"><span>Subtotal</span><span className="tnum">{naira(sub)}</span></div>
+        {discount > 0 && <div className="cm-row"><span>Promo code {cart?.promoCode}</span><span className="tnum">−{naira(discount)}</span></div>}
+        <div className="cm-row">
+          <span>Delivery{chosenZone ? ` · ${chosenZone.name}` : ""}</span>
+          <span className="tnum">{zone ? (delivery ? naira(delivery) : "Free") : "—"}</span>
+        </div>
+        {creditApplied > 0 && useCredit && <div className="cm-row"><span>Exchange credit</span><span className="tnum">−{naira(creditApplied)}</span></div>}
+        <div className="cm-row cm-row--total"><span>Total</span><span className="tnum">{naira(due)}</span></div>
+        {arrival && <p className="cm-small cm-soft">Arrives {arrival}</p>}
+      </div>
+    </>
+  );
+
   return (
-    <form ref={formRef} className="container checkout" onSubmit={submit} noValidate>
-      <div className="hide-mobile">
-        <StepIndicator step={2} />
-      </div>
-      <div className="m-steps show-mobile">
-        <span>
-          <span className="faint">01 BAG ✓</span> &nbsp; <span>02 DETAILS</span> &nbsp; <span className="faint">03 PAY</span>
-        </span>
-        <span>
-          {n} {n === 1 ? "PIECE" : "PIECES"} · {naira(sub - discount)}
-        </span>
-      </div>
+    <form ref={formRef} className="cm cm-co" onSubmit={submit} noValidate>
 
-      <div className="split">
-        <div className="split__main checkout__sections">
-          <h1 className="serif checkout__mtitle show-mobile">
-            Where <em>to?</em>
-          </h1>
-          <h1 className="sr-only">Checkout</h1>
+      <aside className={`cm-co__summary${summaryOpen ? " is-open" : ""}`} aria-label="Order summary">
+        <button type="button" className="cm-co__sumbar" aria-expanded={summaryOpen} aria-controls="co-summary" onClick={() => setSummaryOpen((v) => !v)}>
+          <span>{summaryOpen ? "Hide" : "Show"} order summary <span className="cm-chev" aria-hidden>⌄</span></span>
+          <span className="tnum">{naira(due)}</span>
+        </button>
+        <div id="co-summary" className="cm-co__sumbody">
+          <h2 className="cm-co__sumtitle">Order summary <span className="cm-soft">({n} {n === 1 ? "item" : "items"})</span></h2>
+          {summary}
+        </div>
+      </aside>
 
-          <section className="co-section" aria-labelledby="co-contact">
-            <div className="co-section__head">
-              <span className="mono-label">A.</span>
-              <h2 id="co-contact" className="serif">Contact</h2>
-            </div>
-            <div className="field-grid field-grid--240">
-              <FieldBox label="EMAIL" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: undefined })); }} error={errors.email} required />
-              <FieldBox label="PHONE · +234" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="803 000 0000" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((x) => ({ ...x, phone: undefined })); }} error={errors.phone} required />
-            </div>
-            {status === "guest" && (
-              <p className="mono-xs">
-                HAVE AN ACCOUNT? <Link href="/account?next=/checkout" className="ap-link">SIGN IN</Link> FOR SAVED ADDRESSES AND EXCHANGE CREDIT.
-              </p>
-            )}
-          </section>
+      <div className="cm-co__main">
+        <h1 className="cm-title">Checkout</h1>
+        {status === "guest" && <CheckoutLogin onGuest={(e) => setEmail((x) => x || e)} />}
+        <Section n={1} id="co-contact" title="Contact">
+          <div className="cm-fields">
+            <FieldBox label="Email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: undefined })); }} error={errors.email} required />
+            <FieldBox label="Phone (+234)" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="803 000 0000" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((x) => ({ ...x, phone: undefined })); }} error={errors.phone} required />
+          </div>
+          <Check id="consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">
+            Email me about new drops and private sales
+          </Check>
+          {status === "guest" && (
+            <p className="cm-soft">
+              <Link href="/account?next=/checkout" className="u-link">Sign in for faster checkout</Link>
+            </p>
+          )}
+        </Section>
 
-          <section className="co-section co-section--flush" aria-labelledby="co-delivery">
-            <div className="co-section__head">
-              <span className="mono-label">B.</span>
-              <h2 id="co-delivery" className="serif">Delivery</h2>
-            </div>
-            <div role="radiogroup" aria-labelledby="co-delivery" aria-invalid={!!errors.zone}>
-              {zones.map((z) => {
-                const eta = z.code !== "PICKUP" && z.code === zone ? arrivalFromEta(z.etaText) : null;
-                const meta = z.code === "PICKUP" ? `${upper(settings.pickupAddress || "STORE")} · ${z.etaText}` : `${z.etaText}${eta ? ` · ARRIVES ${upper(eta)}` : ""}`;
-                return (
-                  <RadioRow
-                    key={z.id}
-                    name="zone"
-                    value={z.code}
-                    checked={zone === z.code}
-                    onChange={(v) => { setZone(v as ZoneCode); setErrors((x) => ({ ...x, zone: undefined })); }}
-                    title={z.name}
-                    meta={meta}
-                    aside={z.feeKobo ? naira(z.feeKobo) : "Free"}
-                  />
-                );
-              })}
-            </div>
-            {errors.zone && <span className="field__error" role="alert">{errors.zone}</span>}
-            {!zones.length && <p className="form-error">Delivery options are unavailable right now. Please refresh.</p>}
-          </section>
+        <Section n={2} id="co-delivery" title="Delivery">
+          <div role="radiogroup" aria-labelledby="co-delivery" aria-invalid={!!errors.zone} aria-describedby={errors.zone ? "co-zone-err" : undefined} className="cm-radios">
+            {zones.map((z) => (
+              <RadioRow
+                key={z.id}
+                name="zone"
+                value={z.code}
+                checked={zone === z.code}
+                onChange={(v) => { setZone(v as ZoneCode); setErrors((x) => ({ ...x, zone: undefined })); }}
+                title={z.name}
+                meta={z.code === "PICKUP" ? settings.pickupAddress || undefined : undefined}
+                aside={
+                  <>
+                    <span>{z.feeKobo ? naira(z.feeKobo) : "Free"}</span>
+                    <span className="cm-soft">{z.etaText}</span>
+                  </>
+                }
+              />
+            ))}
+          </div>
+          {errors.zone && <span id="co-zone-err" className="cm-error" role="alert">{errors.zone}</span>}
+          {!zones.length && <p className="cm-error">Delivery options are unavailable right now. Please refresh.</p>}
 
           {!pickup && (
-            <section className="co-section" aria-labelledby="co-address">
-              <div className="co-section__head">
-                <span className="mono-label">C.</span>
-                <h2 id="co-address" className="serif">Address</h2>
-              </div>
+            <div className="cm-co__address">
+              <h3 className="cm-co__h3" id="co-address">Delivery address</h3>
               {saved.length > 0 && (
-                <div className="saved-addr" role="radiogroup" aria-label="Saved addresses">
+                <div role="radiogroup" aria-label="Saved addresses" className="cm-radios">
                   {saved.map((a) => (
-                    <button
+                    <RadioRow
                       key={a.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={savedId === a.id}
-                      className={`saved-addr__item${savedId === a.id ? " is-on" : ""}`}
-                      onClick={() => { setSavedId(a.id!); setAddr({ ...emptyAddress, ...a }); setErrors({}); }}
-                    >
-                      <span className="mono-xs">{upper(a.lga)} · {upper(a.state)}</span>
-                      <span>{a.street}, {a.area}</span>
-                    </button>
+                      name="saved-address"
+                      value={a.id!}
+                      checked={savedId === a.id}
+                      onChange={() => { setSavedId(a.id!); setAddr({ ...emptyAddress, ...a }); setErrors({}); }}
+                      title={`${a.fullName} — ${a.street}, ${a.area}`}
+                      meta={`${a.lga}, ${a.state}`}
+                    />
                   ))}
-                  <button type="button" role="radio" aria-checked={savedId === "new"} className={`saved-addr__item${savedId === "new" ? " is-on" : ""}`} onClick={() => { setSavedId("new"); setAddr({ ...emptyAddress, fullName: addr.fullName }); }}>
-                    <span className="mono-xs">NEW</span>
-                    <span>Use a new address</span>
-                  </button>
+                  <RadioRow name="saved-address" value="new" checked={savedId === "new"} onChange={() => { setSavedId("new"); setAddr({ ...emptyAddress, fullName: addr.fullName }); }} title="Use a new address" />
                 </div>
               )}
-              <div className="field-grid field-grid--3">
-                <FieldBox full label="FULL NAME" autoComplete="name" value={addr.fullName} onChange={(e) => set("fullName", e.target.value)} error={errors.fullName} />
-                <SelectBox label="STATE" autoComplete="address-level1" value={addr.state} onChange={(e) => set("state", e.target.value)} error={errors.state}>
+              <div className="cm-fields">
+                <FieldBox full label="Full name" autoComplete="name" value={addr.fullName} onChange={(e) => set("fullName", e.target.value)} error={errors.fullName} />
+                <SelectBox label="State" autoComplete="address-level1" value={addr.state} onChange={(e) => set("state", e.target.value)} error={errors.state}>
                   {ng.names.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </SelectBox>
                 <SelectBox label="LGA" value={addr.lga} onChange={(e) => set("lga", e.target.value)} error={errors.lga}>
-                  <option value="">Choose…</option>
+                  <option value="">Choose an LGA</option>
                   {lgas.map((l) => (
                     <option key={l} value={l}>{l}</option>
                   ))}
                 </SelectBox>
-                <FieldBox label="CITY / AREA" autoComplete="address-level2" value={addr.area} onChange={(e) => set("area", e.target.value)} error={errors.area} placeholder="Lekki Phase 1" />
-                <FieldBox full label="STREET ADDRESS" autoComplete="street-address" value={addr.street} onChange={(e) => set("street", e.target.value)} error={errors.street} />
-                <FieldBox full label="NEAREST LANDMARK · HELPS THE RIDER" value={addr.landmark} onChange={(e) => set("landmark", e.target.value)} error={errors.landmark} placeholder="Opposite the filling station" />
-                <TextAreaBox full label="DELIVERY NOTE · OPTIONAL" rows={2} value={addr.note ?? ""} onChange={(e) => set("note", e.target.value)} placeholder="Gate code, best time to call…" />
+                <FieldBox full label="City / area" autoComplete="address-level2" value={addr.area} onChange={(e) => set("area", e.target.value)} error={errors.area} placeholder="Lekki Phase 1" />
+                <FieldBox full label="Street address" autoComplete="street-address" value={addr.street} onChange={(e) => set("street", e.target.value)} error={errors.street} />
+                <FieldBox full label="Nearest landmark" value={addr.landmark} onChange={(e) => set("landmark", e.target.value)} error={errors.landmark} placeholder="Opposite the filling station" hint="Helps the rider find you." />
+                <TextAreaBox full label="Delivery note (optional)" rows={2} value={addr.note ?? ""} onChange={(e) => set("note", e.target.value)} placeholder="Gate code, best time to call…" />
               </div>
               {status === "authed" && savedId === "new" && (
-                <CheckRow checked={saveAddress} onChange={setSaveAddress} id="save-addr">Save this address to my account</CheckRow>
+                <Check id="save-addr" checked={saveAddress} onChange={setSaveAddress}>Save this address to my account</Check>
               )}
-            </section>
-          )}
-
-          <section className="co-section" aria-labelledby="co-pay">
-            <div className="co-section__head">
-              <span className="mono-label">{letter(pickup ? 2 : 3)}.</span>
-              <h2 id="co-pay" className="serif">Payment</h2>
-            </div>
-            {enabled.length ? (
-              <div className="provider-grid" role="radiogroup" aria-labelledby="co-pay">
-                {enabled.map((p) => (
-                  <ProviderCard key={p.code} name={p.name} tag={p.tag} desc={p.desc} selected={provider === p.code} onSelect={() => { setProvider(p.code); setErrors((x) => ({ ...x, provider: undefined })); }} />
-                ))}
-              </div>
-            ) : (
-              <p className="form-error">Online payment is paused right now. Message us on WhatsApp to order.</p>
-            )}
-            {errors.provider && <span className="field__error" role="alert">{errors.provider}</span>}
-            <CheckRow checked={consent} onChange={setConsent} id="consent" sub="OPTIONAL · UNSUBSCRIBE ANY TIME">
-              Email me about new drops and private sales
-            </CheckRow>
-          </section>
-        </div>
-
-        <aside className="split__aside summary summary--checkout" aria-label="Order summary">
-          <div className="mono-label summary__head">ORDER · {n} {n === 1 ? "PIECE" : "PIECES"}</div>
-          <ul className="summary__lines">
-            {lines.map((l) => (
-              <li key={l.id} className="summary-line">
-                <span className="summary-line__img">
-                  <ProductImage src={l.imageUrl} alt="" kind={iconKind({ material: l.material, name: l.name })} iconSize={20} sizes="56px" />
-                </span>
-                <span>
-                  {l.name}
-                  {l.quantity > 1 ? ` × ${l.quantity}` : ""}
-                  <span className="meta summary-line__meta">{[l.colour, l.size].filter(Boolean).map(upper).join(" · ")}</span>
-                  {l.problem && <span className="mono-xs red summary-line__meta">{l.problem === "SOLD_OUT" ? "● SOLD OUT" : `● ONLY ${l.available} LEFT`}</span>}
-                </span>
-                <span className="tnum">{naira(l.lineKobo)}</span>
-              </li>
-            ))}
-          </ul>
-          {problems.length > 0 && (
-            <div className="notice notice--red" role="alert">
-              {blocked ? "Some pieces sold out while you were shopping." : "Stock changed on some pieces."} <Link href="/bag" className="ap-link">Review your bag</Link>
             </div>
           )}
-          <div className="summary__rows summary__rows--rule">
-            <div className="summary__row"><span>Subtotal</span><span className="tnum">{naira(sub)}</span></div>
-            {discount > 0 && <div className="summary__row"><span>Promo · {cart?.promoCode}</span><span className="tnum">−{naira(discount)}</span></div>}
-            <div className="summary__row">
-              <span>Delivery · {zone ? SHORT[zone] : "—"}</span>
-              <span className="tnum">{delivery ? naira(delivery) : "Free"}</span>
+        </Section>
+
+        <Section n={3} id="co-pay" title="Payment">
+          {enabled.length ? (
+            <div className="cm-radios" role="radiogroup" aria-labelledby="co-pay" aria-describedby={errors.provider ? "co-pay-err" : undefined}>
+              {enabled.map((p) => (
+                <RadioRow
+                  key={p.code}
+                  name="provider"
+                  value={p.code}
+                  checked={provider === p.code}
+                  onChange={() => { setProvider(p.code); setErrors((x) => ({ ...x, provider: undefined })); }}
+                  title={p.name}
+                  meta={p.desc}
+                />
+              ))}
             </div>
-            {creditAvail > 0 && (
-              <button type="button" role="switch" aria-checked={useCredit} className={`credit-line${useCredit ? " is-on" : ""}`} onClick={() => setUseCredit(!useCredit)}>
-                <span className="row gap-12">
-                  <span className={`check-box check-box--sm${useCredit ? " is-on" : ""}`} aria-hidden />
-                  Exchange credit
-                </span>
-                <span className="tnum">−{naira(useCredit ? creditApplied : Math.min(creditAvail, sub - discount + delivery))}</span>
-              </button>
-            )}
-          </div>
-          <div className="summary__total">
-            <span>
-              Total
-              <span className="mono-xs summary__note">{pickup ? "NOTHING ELSE TO PAY" : arrival ? `ARRIVES ${upper(arrival)}` : "INCL. DELIVERY"}</span>
-            </span>
-            <span className="serif tnum summary__amount">{naira(due)}</span>
-          </div>
-          <p className="exchange-line">
-            <span className="mono-xs">NO REFUNDS ·</span> Unworn pieces can be exchanged for credit. <Link href="/policies/exchanges" className="ap-link">Exchange policy</Link>
-          </p>
-          {formError && <p className="form-error" role="alert">{formError}</p>}
-          <button type="submit" className="btn btn--block hide-mobile" disabled={submitting || !lines.length || blocked || (!enabled.length && due > 0)}>
-            <span>{submitting ? "Opening secure payment…" : payLabel}</span>
-            <span aria-hidden>→</span>
+          ) : (
+            <p className="cm-error">Online payment is paused right now. Message us on WhatsApp to order.</p>
+          )}
+          {errors.provider && <span id="co-pay-err" className="cm-error" role="alert">{errors.provider}</span>}
+          {!creditOnly && enabled.length > 0 && <p className="cm-small cm-soft">You&apos;ll finish on {providerName}&apos;s secure page. Your order is confirmed once payment clears.</p>}
+          {creditAvail > 0 && (
+            <CreditToggle amountKobo={useCredit && creditApplied ? creditApplied : Math.min(creditAvail, sub - discount + delivery)} on={useCredit} onChange={setUseCredit} source={source} />
+          )}
+        </Section>
+
+        <Section n={4} id="co-review" title="Review">
+          <div className="cm-co__review">{summary}</div>
+          {formError && <p className="cm-error" role="alert">{formError}</p>}
+          <button type="submit" className="btn btn--primary btn--block" disabled={submitting || !lines.length || blocked || (!enabled.length && due > 0)}>
+            {payLabel}
           </button>
-          <p className="summary__small hide-mobile">
-            {due === 0 && lines.length
-              ? "Your exchange credit covers this order — no payment needed."
-              : `You'll finish on ${providerName}'s secure page. Your order is confirmed once payment clears. No refunds; unworn pieces can be exchanged for credit.`}
+          {creditOnly && <p className="cm-small cm-soft">Your exchange credit covers this order — no payment needed.</p>}
+          <p className="cm-small cm-soft">
+            Exchange only — no refunds. Unworn pieces can be exchanged for store credit within {settings.exchangeWindowDays} days. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
           </p>
-        </aside>
-      </div>
-
-      {/* Mobile pay bar (MobileCheckoutV2) */}
-      <div className="paybar show-mobile">
-        <div className="paybar__fine">
-          <span>{pickup ? "PICKUP · FREE" : `+ DELIVERY · ${upper(zone ? SHORT[zone] : "")}`}</span>
-          <Link href="/policies/exchanges">NO REFUNDS · EXCHANGE ONLY</Link>
-        </div>
-        <button type="submit" className="btn btn--block paybar__btn" disabled={submitting || !lines.length || blocked}>
-          <span>{submitting ? "Opening…" : payLabel}</span>
-          <span className="tnum">{naira(due)} →</span>
-        </button>
+        </Section>
       </div>
     </form>
   );

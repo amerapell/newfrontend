@@ -36,6 +36,8 @@ export const catalogApi = {
   suggest: (q: string, signal?: AbortSignal) => api.get<SearchSuggest>("search/suggest", { query: { q }, signal, revalidate: 30 }),
   states: () => api.get<NgState[]>("locations/states", { revalidate: 86400, tags: ["states"] }),
   zones: () => api.get<DeliveryZone[]>("delivery-zones", { revalidate: 300, tags: ["zones"] }),
+  /** "Notify me" when a sold-out size is back. */
+  notifyStock: (slug: string, email: string, variantId: string) => api.post<{ ok: true }>(`products/${encodeURIComponent(slug)}/notify`, { email, variantId }),
 };
 
 export const contentApi = {

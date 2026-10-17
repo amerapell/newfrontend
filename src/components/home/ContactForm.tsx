@@ -12,14 +12,14 @@ export function ContactForm() {
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   if (state === "ok")
     return (
-      <div className="contact-ok" role="status">
-        <span className="serif empty__title">Thank <em>you.</em></span>
-        <p className="body-copy">We&apos;ve got your message and will reply within one working day. For anything urgent, WhatsApp is fastest.</p>
+      <div className="cm-form" role="status">
+        <p className="t-title">Thank you.</p>
+        <p>We&apos;ve got your message and will reply within one working day. For anything urgent, WhatsApp is fastest.</p>
       </div>
     );
   return (
     <form
-      className="stack gap-12"
+      className="cm-form"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!f.name.trim() || !/^\S+@\S+\.\S+$/.test(f.email) || !f.message.trim()) {
@@ -42,17 +42,18 @@ export function ContactForm() {
         }
       }}
     >
-      <div className="field-grid field-grid--200">
-        <FieldBox label="NAME" autoComplete="name" value={f.name} onChange={set("name")} required />
-        <FieldBox label="EMAIL" type="email" autoComplete="email" value={f.email} onChange={set("email")} required />
-        <FieldBox label="PHONE · OPTIONAL" type="tel" autoComplete="tel-national" value={f.phone} onChange={set("phone")} />
-        <SelectBox label="SUBJECT" value={f.subject} onChange={set("subject")}>
+      <p className="cm-small cm-auth__req">*Required fields</p>
+      <div className="cm-fields">
+        <FieldBox label="Name*" autoComplete="name" value={f.name} onChange={set("name")} required />
+        <FieldBox label="Email*" type="email" autoComplete="email" value={f.email} onChange={set("email")} required />
+        <FieldBox label="Phone (optional)" type="tel" autoComplete="tel-national" value={f.phone} onChange={set("phone")} />
+        <SelectBox label="Subject" value={f.subject} onChange={set("subject")}>
           {["Order question", "Sizing & fit", "Exchange", "Delivery", "Press & collaborations", "Something else"].map((s) => <option key={s}>{s}</option>)}
         </SelectBox>
-        <TextAreaBox full label="MESSAGE" rows={5} value={f.message} onChange={set("message")} required />
+        <TextAreaBox full label="Message*" rows={5} value={f.message} onChange={set("message")} required />
       </div>
-      {state === "err" && <p className="form-error" role="alert">{msg}</p>}
-      <button className="btn btn--short" disabled={state === "busy"}>{state === "busy" ? "Sending…" : "Send message →"}</button>
+      {state === "err" && <p className="cm-error" role="alert">{msg}</p>}
+      <button className="btn btn--primary btn--block" disabled={state === "busy"}>{state === "busy" ? "Sending…" : "Send message"}</button>
     </form>
   );
 }

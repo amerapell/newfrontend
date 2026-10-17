@@ -16,7 +16,7 @@ export default async function ReelPage() {
   const fallback = list.length ? list : await safe(catalogApi.products({ pageSize: 6, sort: "newest", inStock: true }).then((r) => r.items), []);
   const looks = (await Promise.all(fallback.slice(0, 6).map((p) => safe(catalogApi.product(p.slug), null)))).filter(Boolean) as Product[];
   return (
-    <main id="main" tabIndex={-1} className="reel-page">
+    <main id="main" tabIndex={-1}>
       <ShopTheReel looks={looks} />
     </main>
   );

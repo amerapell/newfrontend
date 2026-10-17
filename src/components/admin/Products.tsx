@@ -4,10 +4,13 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { FieldBox, SelectBox, TextAreaBox, CheckRow } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
-import { adminApi, uploadToCloudinary } from "@/lib/api";
-import { apiMessage, longDate, naira, slugify, upper } from "@/lib/format";
+import { adminApi, uploadImage } from "@/lib/api";
+import { apiMessage, longDate, naira, slugify } from "@/lib/format";
 import type { AdminProduct, AdminProductInput, Colour, ProductStatus, SizeGuideKind, Variant } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
+
+/** Design v3 §8: image slots by convention. */
+export const IMAGE_SLOTS = ["Product shot (shown in grids)", "Worn / detail (shown on hover and as featured piece)"];
 
 const STATUS: ProductStatus[] = ["LIVE", "DRAFT", "ARCHIVED"];
 
@@ -32,7 +35,7 @@ export function ProductsList() {
   return (
     <>
       <AdminHead
-        index={`PRODUCTS · ${data?.total ?? "…"}`}
+        index={`Products · ${data?.total ?? "…"}`}
         title={<>Your <em>pieces</em></>}
         actions={
           <>
@@ -88,7 +91,7 @@ export function ProductsList() {
           <tr><th>No.</th><th>Piece</th><th>Status</th><th className="num">Price</th><th className="num">Stock</th><th className="num">Available</th><th className="num">Variants</th><th>Updated</th><th /></tr>
         </thead>
         <tbody>
-          {loading && !data && <tr><td colSpan={9} className="mono-label">LOADING…</td></tr>}
+          {loading && !data && <tr><td colSpan={9} className="mono-label">Loading…</td></tr>}
           {data?.items.map((p) => (
             <tr key={p.id}>
               <td className="mono-xs">{p.number}</td>
@@ -98,8 +101,8 @@ export function ProductsList() {
               <td className="num tnum">{p.stock}</td>
               <td className={`num tnum${p.available <= 2 ? " red" : ""}`}>{p.available}</td>
               <td className="num tnum">{p.variantCount}</td>
-              <td className="mono-xs">{upper(longDate(p.updatedAt))}</td>
-              <td className="num"><Link href={`/p/${p.slug}`} target="_blank" className="mono-xs">VIEW ↗</Link></td>
+              <td className="mono-xs">{longDate(p.updatedAt)}</td>
+              <td className="num"><Link href={`/p/${p.slug}`} target="_blank" className="mono-xs">View ↗</Link></td>
             </tr>
           ))}
         </tbody>
@@ -126,6 +129,7 @@ function toInput(p: AdminProduct): AdminProductInput {
     material: p.material ?? "",
     sizeGuide: p.sizeGuide,
     exchangeable: p.exchangeable,
+    featured: p.featured ?? false,
     status: p.status,
     collectionIds: p.collectionIds,
     colours: p.options.colours,
@@ -137,7 +141,7 @@ function toInput(p: AdminProduct): AdminProductInput {
 }
 
 const emptyInput: AdminProductInput = {
-  name: "", slug: "", number: "", description: "", details: "", care: "", material: "", sizeGuide: "CLOTHING", exchangeable: true,
+  name: "", slug: "", number: "", description: "", details: "", care: "", material: "", sizeGuide: "CLOTHING", exchangeable: true, featured: false,
   status: "DRAFT", collectionIds: [], colours: [], sizes: [], basePriceKobo: 0, compareAtKobo: null, images: [],
 };
 
@@ -195,7 +199,7 @@ export function ProductEditor({ id }: { id?: string }) {
     setUploading(list.length);
     for (const f of list) {
       try {
-        const url = await uploadToCloudinary(f);
+        const url = await uploadImage(f);
         setForm((x) => ({ ...x!, images: [...x!.images, { url, alt: x!.name || f.name.replace(/\.\w+$/, ""), colour: null }] }));
       } catch (e) {
         toast.show({ message: apiMessage(e, `Couldn't upload ${f.name}`), tone: "error" });
@@ -217,7 +221,7 @@ export function ProductEditor({ id }: { id?: string }) {
   return (
     <>
       <AdminHead
-        index={id ? `PRODUCTS / NO. ${form.number}` : "PRODUCTS / NEW"}
+        index={id ? `Products / no. ${form.number}` : "Products / new"}
         title={id ? form.name || "Untitled" : <>New <em>piece</em></>}
         actions={
           <>
@@ -247,31 +251,32 @@ export function ProductEditor({ id }: { id?: string }) {
       {err && <p className="form-error" role="alert">{err}</p>}
       <div className="admin-form">
         <section className="admin-card">
-          <div className="mono-label admin-card__head">BASICS</div>
+          <div className="mono-label admin-card__head">Basics</div>
           <div className="field-grid field-grid--200">
-            <FieldBox full label="NAME" value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <FieldBox full label="Name" value={form.name} onChange={(e) => set("name", e.target.value)} />
             <FieldBox label="NUMBER · e.g. 014" value={form.number} onChange={(e) => set("number", e.target.value.replace(/^No\.\s*/i, ""))} />
-            <FieldBox label="SLUG" value={form.slug ?? ""} placeholder={slugify(form.name)} onChange={(e) => set("slug", slugify(e.target.value))} />
+            <FieldBox label="Slug" value={form.slug ?? ""} placeholder={slugify(form.name)} onChange={(e) => set("slug", slugify(e.target.value))} />
             <FieldBox full label="MATERIAL · CATEGORY — e.g. Lamb leather · Outerwear" value={form.material} onChange={(e) => set("material", e.target.value)} />
-            <SelectBox label="STATUS" value={form.status} onChange={(e) => set("status", e.target.value as ProductStatus)}>
+            <SelectBox label="Status" value={form.status} onChange={(e) => set("status", e.target.value as ProductStatus)}>
               {STATUS.map((s) => <option key={s}>{s}</option>)}
             </SelectBox>
-            <SelectBox label="SIZE GUIDE" value={form.sizeGuide} onChange={(e) => set("sizeGuide", e.target.value as SizeGuideKind)}>
+            <SelectBox label="Size guide" value={form.sizeGuide} onChange={(e) => set("sizeGuide", e.target.value as SizeGuideKind)}>
               <option value="CLOTHING">Clothing</option>
               <option value="SHOES">Shoes (EU/UK/US)</option>
               <option value="NONE">None</option>
             </SelectBox>
-            <FieldBox label="BASE PRICE ₦" inputMode="numeric" value={form.basePriceKobo ? String(form.basePriceKobo / 100) : ""} onChange={(e) => set("basePriceKobo", Math.round(Number(e.target.value.replace(/\D/g, "")) * 100))} />
-            <FieldBox label="COMPARE-AT ₦ · OPTIONAL (SALE)" inputMode="numeric" value={form.compareAtKobo ? String(form.compareAtKobo / 100) : ""} onChange={(e) => set("compareAtKobo", e.target.value ? Math.round(Number(e.target.value.replace(/\D/g, "")) * 100) : null)} />
-            <TextAreaBox full label="DESCRIPTION" rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} />
-            <TextAreaBox full label="DETAILS · CUT, FIT, FINISH" rows={2} value={form.details} onChange={(e) => set("details", e.target.value)} />
-            <TextAreaBox full label="MATERIAL & CARE" rows={2} value={form.care} onChange={(e) => set("care", e.target.value)} />
+            <FieldBox label="Base price ₦" inputMode="numeric" value={form.basePriceKobo ? String(form.basePriceKobo / 100) : ""} onChange={(e) => set("basePriceKobo", Math.round(Number(e.target.value.replace(/\D/g, "")) * 100))} />
+            <FieldBox label="Compare-at ₦ · optional (sale)" inputMode="numeric" value={form.compareAtKobo ? String(form.compareAtKobo / 100) : ""} onChange={(e) => set("compareAtKobo", e.target.value ? Math.round(Number(e.target.value.replace(/\D/g, "")) * 100) : null)} />
+            <TextAreaBox full label="Description" rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} />
+            <TextAreaBox full label="Details · cut, fit, finish" rows={2} value={form.details} onChange={(e) => set("details", e.target.value)} />
+            <TextAreaBox full label="Material & care" rows={2} value={form.care} onChange={(e) => set("care", e.target.value)} />
           </div>
-          <CheckRow checked={form.exchangeable} onChange={(v) => set("exchangeable", v)} id="exch" sub="UNCHECK FOR FINAL-SALE PIECES (E.G. JEWELLERY) — HIDES THE EXCHANGE BUTTON">Exchangeable</CheckRow>
+          <CheckRow checked={form.exchangeable} onChange={(v) => set("exchangeable", v)} id="exch" sub="Uncheck for final-sale pieces (e.g. jewellery) — hides the exchange button">Exchangeable</CheckRow>
+          <CheckRow checked={!!form.featured} onChange={(v) => set("featured", v)} id="featured" sub="Shown large (centred, half width) after every 8 pieces in collection grids, using image 2">Featured piece in listings</CheckRow>
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">COLLECTIONS</div>
+          <div className="mono-label admin-card__head">Collections</div>
           <div className="chip-row">
             {cols.data?.map((c) => {
               const on = form.collectionIds.includes(c.id);
@@ -285,16 +290,18 @@ export function ProductEditor({ id }: { id?: string }) {
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">IMAGES · {form.images.length} / 8 · FIRST IS THE HERO</div>
+          <div className="mono-label admin-card__head">Images · {form.images.length} / 8</div>
+          <p className="t-small t-grey">Image 1 is the product shot on the plain ground; image 2 is the worn / detail shot. Drag order with the arrows.</p>
           <div className="img-grid">
             {form.images.map((img, i) => (
               <div key={img.url + i} className="img-grid__item">
+                <span className="img-grid__slot">{IMAGE_SLOTS[i] ?? `Detail ${i - 1}`}</span>
                 <div className="img-grid__thumb">
                   {img.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={img.url} alt={img.alt} />
                   ) : (
-                    <span className="mono-xs admin-noimg">NO FILE</span>
+                    <span className="mono-xs admin-noimg">No file</span>
                   )}
                 </div>
                 <input className="admin-input" aria-label="Alt text" value={img.alt} onChange={(e) => set("images", form.images.map((x, k) => (k === i ? { ...x, alt: e.target.value } : x)))} placeholder="Alt text (e.g. Back)" />
@@ -303,9 +310,9 @@ export function ProductEditor({ id }: { id?: string }) {
                   {form.colours.map((c) => <option key={c.name}>{c.name}</option>)}
                 </select>
                 <div className="row gap-8">
-                  <button type="button" className="mono-xs" onClick={() => moveImage(i, -1)} aria-label="Move left">←</button>
-                  <button type="button" className="mono-xs" onClick={() => moveImage(i, 1)} aria-label="Move right">→</button>
-                  <button type="button" className="mono-xs red" onClick={() => set("images", form.images.filter((_, k) => k !== i))}>REMOVE</button>
+                  <button type="button" className="u-link" onClick={() => moveImage(i, -1)} aria-label="Move left">⟵</button>
+                  <button type="button" className="u-link" onClick={() => moveImage(i, 1)} aria-label="Move right">⟶</button>
+                  <button type="button" className="u-link" onClick={() => set("images", form.images.filter((_, k) => k !== i))}>Remove</button>
                 </div>
               </div>
             ))}
@@ -313,17 +320,17 @@ export function ProductEditor({ id }: { id?: string }) {
               <label className="img-grid__add">
                 <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e.target.files)} />
                 <span className="serif">+</span>
-                <span className="mono-xs">{uploading ? `UPLOADING ${uploading}…` : "UPLOAD IMAGES"}</span>
+                <span className="mono-xs">{uploading ? `Uploading ${uploading}…` : form.images.length < 2 ? `Upload ${IMAGE_SLOTS[form.images.length].split(" (")[0].toLowerCase()}` : "Upload images"}</span>
               </label>
             )}
           </div>
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">OPTIONS → VARIANT MATRIX ({matrix.length})</div>
+          <div className="mono-label admin-card__head">Options → variant matrix ({matrix.length})</div>
           <div className="stack gap-12">
             <div>
-              <span className="mono-xs">COLOURS</span>
+              <span className="mono-xs">Colours</span>
               <div className="chip-row">
                 {form.colours.map((c) => (
                   <span key={c.name} className="chip chip--on">
@@ -339,7 +346,7 @@ export function ProductEditor({ id }: { id?: string }) {
               </div>
             </div>
             <div>
-              <span className="mono-xs">SIZES</span>
+              <span className="mono-xs">Sizes</span>
               <div className="chip-row">
                 {Object.entries(SIZE_PRESETS).map(([k, v]) => (
                   <button key={k} type="button" className="chip" onClick={() => set("sizes", v)}>{k}</button>
@@ -359,7 +366,7 @@ export function ProductEditor({ id }: { id?: string }) {
                 </span>
               </div>
             </div>
-            <p className="mono-xs">SAVING GENERATES ONE VARIANT (SKU) PER COLOUR × SIZE. EXISTING VARIANTS KEEP THEIR STOCK.</p>
+            <p className="mono-xs">Saving generates one variant (SKU) per colour × size. existing variants keep their stock.</p>
             {!id && <div className="chip-row">{matrix.map((m) => <span key={m} className="chip">{m}</span>)}</div>}
           </div>
         </section>
@@ -397,7 +404,7 @@ function VariantTable({ variants, onChange }: { variants: Variant[]; onChange: (
   };
   return (
     <section className="admin-card">
-      <div className="mono-label admin-card__head">VARIANTS · PRICE / COMPARE-AT / STOCK</div>
+      <div className="mono-label admin-card__head">Variants · price / compare-at / stock</div>
       <div className="table-scroll">
         <table className="admin-table">
           <thead>

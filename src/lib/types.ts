@@ -27,6 +27,8 @@ export type ProductCard = {
   images: ProductImage[];
   colours: Colour[];
   inStock: boolean;
+  /** Admin flag: shown as the wide featured piece in listing grids. */
+  featured?: boolean;
 };
 
 export type Variant = {
@@ -65,7 +67,14 @@ export type Collection = {
   count: number;
   isDrop: boolean;
   goLiveAt: string | null;
-  heroPattern: "ADIRE" | "ASOOKE" | null;
+  /** Legacy v2 field — ignored by the v3 storefront. */
+  heroPattern?: "ADIRE" | "ASOOKE" | null;
+  /** Design v3 §8: home hero panel / mega-menu image. */
+  heroImageUrl?: string | null;
+  /** Design v3 §8: home hero panel order (ascending); null = not on the home page. */
+  homeOrder?: number | null;
+  /** Design v3 §8: hero link label override (default "Discover the collection"). */
+  tagline?: string | null;
 };
 
 export type SortKey = "newest" | "price_asc" | "price_desc";
@@ -305,6 +314,7 @@ export type AdminProductInput = {
   material: string;
   sizeGuide: SizeGuideKind;
   exchangeable: boolean;
+  featured?: boolean;
   status: ProductStatus;
   collectionIds: string[];
   colours: Colour[];

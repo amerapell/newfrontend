@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { catalogApi, safe } from "./api";
+import { NAV_CATEGORIES, subcategoriesOf, type NavCategories } from "./nav";
 import type { Collection, StoreSettings } from "./types";
 
 /** Used only if the API can't be reached in production — keeps every page renderable. */
@@ -15,12 +16,23 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   contactPhone: "",
   paystackEnabled: true,
   bachsEnabled: true,
-  exchangeWindowDays: 14,
+  exchangeWindowDays: 7,
   creditExpiryDays: null,
   freeDeliveryThresholdKobo: null,
-  tickerText: ["DELIVERY ACROSS NIGERIA", "PAY WITH PAYSTACK OR BACHS", "EXCHANGE, NOT REFUND", "LAGOS"],
+  tickerText: [],
   drop: null,
 };
 
 export const getSettings = cache(() => safe<StoreSettings>(catalogApi.settings(), DEFAULT_SETTINGS));
 export const getCollections = cache(() => safe<Collection[]>(catalogApi.collections(), []));
+
+/** Mega-menu / listing-rail sub-categories for the main collections (cached with the collection fetch). */
+export const getNavCategories = cache(async (): Promise<NavCategories> => {
+  const entries = await Promise.all(
+    NAV_CATEGORIES.map(async (n) => {
+      const page = await safe(catalogApi.collection(n.slug, { pageSize: 96 }), null);
+      return [n.slug, page ? subcategoriesOf(page.products.items) : []] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+});

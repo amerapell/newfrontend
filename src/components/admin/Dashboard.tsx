@@ -11,30 +11,30 @@ export function Dashboard() {
   const maxBest = Math.max(1, ...(data?.bestSellers.map((s) => s.units) ?? [1]));
   return (
     <>
-      <AdminHead index="DASHBOARD" title={<>Today at <em>Amerapelle</em></>} />
+      <AdminHead index="Dashboard" title={<>Today at <em>Amerapelle</em></>} />
       {error && <p className="form-error">{error}</p>}
-      {loading && !data && <p className="mono-label">LOADING…</p>}
+      {loading && !data && <p className="mono-label">Loading…</p>}
       {data && (
         <>
           <div className="kpis">
             <div className="kpi">
-              <span className="mono-label">TODAY&apos;S SALES</span>
+              <span className="mono-label">Today&apos;s sales</span>
               <span className="serif tnum kpi__value">{naira(data.todaySalesKobo)}</span>
             </div>
             <Link href="/admin/orders?status=PAID" className="kpi">
-              <span className="mono-label">ORDERS TO FULFIL</span>
+              <span className="mono-label">Orders to fulfil</span>
               <span className="serif tnum kpi__value">{data.ordersToFulfil}</span>
               <span className="ap-link small-link">Open orders →</span>
             </Link>
             <Link href="/admin/exchanges?status=REQUESTED" className="kpi">
-              <span className="mono-label">EXCHANGES TO REVIEW</span>
+              <span className="mono-label">Exchanges to review</span>
               <span className="serif tnum kpi__value">{data.pendingExchanges}</span>
               <span className="ap-link small-link">Review →</span>
             </Link>
           </div>
           <div className="admin-grid">
             <section className="admin-card">
-              <div className="mono-label admin-card__head">BEST SELLERS · 30 DAYS</div>
+              <div className="mono-label admin-card__head">Best sellers · 30 days</div>
               <ul className="bars">
                 {data.bestSellers.map((b) => (
                   <li key={b.name}>
@@ -46,7 +46,7 @@ export function Dashboard() {
               </ul>
             </section>
             <section className="admin-card">
-              <div className="mono-label admin-card__head">ORDERS BY SOURCE · UTM</div>
+              <div className="mono-label admin-card__head">Orders by source · UTM</div>
               <ul className="bars">
                 {data.ordersBySource.map((s) => (
                   <li key={s.source}>
@@ -59,7 +59,7 @@ export function Dashboard() {
             </section>
             <section className="admin-card admin-card--wide">
               <div className="mono-label admin-card__head row between">
-                <span>LOW STOCK</span>
+                <span>Low stock</span>
                 <Link href="/admin/products" className="ap-link small-link">Products →</Link>
               </div>
               <table className="admin-table">

@@ -7,7 +7,7 @@ import { StepTracker } from "@/components/ui/StepTracker";
 import { TextAreaBox } from "@/components/ui/Field";
 import { useToast } from "@/context/ToastContext";
 import { adminApi } from "@/lib/api";
-import { EXCHANGE_STATUS_LABEL, ORDER_STATUS_LABEL, apiMessage, longDate, naira, plural, upper } from "@/lib/format";
+import { EXCHANGE_STATUS_LABEL, ORDER_STATUS_LABEL, apiMessage, longDate, naira, plural } from "@/lib/format";
 import { iconKind } from "@/lib/product";
 import type { AdminExchangeDetail, ExchangeStatus } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
@@ -38,7 +38,7 @@ function tracker(ex: AdminExchangeDetail) {
   const at = (s: ExchangeStatus) => [...ex.history].reverse().find((h) => h.status === s);
   const stamp = (s: ExchangeStatus, fallback: string) => {
     const h = at(s);
-    return h ? upper(longDate(h.at)) : fallback;
+    return h ? longDate(h.at) : fallback;
   };
   if (ex.status === "DECLINED") {
     // Show the steps it actually passed through, then Declined as the terminal step.
@@ -46,7 +46,7 @@ function tracker(ex: AdminExchangeDetail) {
     const declined = at("DECLINED");
     const steps = [
       ...passed.map((f) => ({ label: f.label, desc: stamp(f.status, f.desc) })),
-      { label: "Declined", desc: declined ? upper(longDate(declined.at)) : "Closed" },
+      { label: "Declined", desc: declined ? longDate(declined.at) : "Closed" },
     ];
     return { steps, reached: steps.length, declined: true };
   }
@@ -65,7 +65,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
   const [photo, setPhoto] = useState<number | null>(null);
 
   if (error) return <p className="form-error">{error}</p>;
-  if (!ex) return <p className="mono-label">LOADING…</p>;
+  if (!ex) return <p className="mono-label">Loading…</p>;
 
   const value = ex.items.reduce((n, i) => n + i.valueKobo, 0);
   const pieces = ex.items.reduce((n, i) => n + i.quantity, 0);
@@ -137,7 +137,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
   return (
     <>
       <AdminHead
-        index={`EXCHANGES / ${ex.number} · REQUESTED ${upper(longDate(ex.createdAt))}`}
+        index={`Exchanges / ${ex.number} · Requested ${longDate(ex.createdAt)}`}
         title={
           <span className="ex-admin__title">
             {ex.number}
@@ -149,11 +149,11 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
 
       <div className="admin-grid ex-admin__grid">
         <section className="admin-card admin-card--wide">
-          <div className="mono-label admin-card__head">STATUS</div>
+          <div className="mono-label admin-card__head">Status</div>
           <StepTracker steps={t.steps} reached={t.reached} declined={t.declined} />
           {ex.status === "DECLINED" && lastNote?.note && (
             <div className="notice notice--red">
-              <span className="mono-xs">REASON GIVEN</span>
+              <span className="mono-xs">Reason given</span>
               <br />
               {lastNote.note}
             </div>
@@ -161,7 +161,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
           {ex.creditKobo > 0 && (
             <div className="notice row between wrap gap-12">
               <span>
-                <span className="mono-xs">CREDIT ISSUED</span>
+                <span className="mono-xs">Credit issued</span>
                 <br />
                 {naira(ex.creditKobo)} exchange credit to {ex.customer.email}
               </span>
@@ -181,34 +181,34 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
             </div>
           )}
           {ex.status === "APPROVED" && (
-            <p className="mono-xs">MARKING RECEIVED RESTOCKS {plural(pieces, "UNIT", "UNITS")} AND ISSUES {naira(value)} CREDIT IN ONE STEP.</p>
+            <p className="mono-xs">Marking received restocks {plural(pieces, "unit", "units")} and issues {naira(value)} credit in one step.</p>
           )}
-          {(ex.status === "COMPLETED" || ex.status === "DECLINED") && <p className="mono-xs">CLOSED · NO FURTHER ACTIONS.</p>}
+          {(ex.status === "COMPLETED" || ex.status === "DECLINED") && <p className="mono-xs">Closed · no further actions.</p>}
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">CUSTOMER</div>
+          <div className="mono-label admin-card__head">Customer</div>
           <dl className="order-meta">
-            <div><dt className="mono-xs">NAME</dt><dd>{ex.customer.name ?? "—"}</dd></div>
-            <div><dt className="mono-xs">EMAIL</dt><dd><a className="ap-link" href={`mailto:${ex.customer.email}`}>{ex.customer.email}</a></dd></div>
-            <div><dt className="mono-xs">PHONE</dt><dd>{ex.customer.phone ? <a className="ap-link" href={`tel:${ex.customer.phone}`}>{ex.customer.phone}</a> : "—"}</dd></div>
-            <div><dt className="mono-xs">ACCOUNT</dt><dd>{ex.customer.userId ? "Account holder — credit lands on their account" : "Guest — credit is held against this email"}</dd></div>
+            <div><dt className="mono-xs">Name</dt><dd>{ex.customer.name ?? "—"}</dd></div>
+            <div><dt className="mono-xs">Email</dt><dd><a className="ap-link" href={`mailto:${ex.customer.email}`}>{ex.customer.email}</a></dd></div>
+            <div><dt className="mono-xs">Phone</dt><dd>{ex.customer.phone ? <a className="ap-link" href={`tel:${ex.customer.phone}`}>{ex.customer.phone}</a> : "—"}</dd></div>
+            <div><dt className="mono-xs">Account</dt><dd>{ex.customer.userId ? "Account holder — credit lands on their account" : "Guest — credit is held against this email"}</dd></div>
           </dl>
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">ORDER · DELIVERY WINDOW</div>
+          <div className="mono-label admin-card__head">Order · delivery window</div>
           <dl className="order-meta">
             <div>
-              <dt className="mono-xs">ORDER</dt>
+              <dt className="mono-xs">Order</dt>
               <dd>
                 {ex.orderId ? <Link href={`/admin/orders/${ex.orderId}`} className="ap-link">{ex.orderNumber}</Link> : ex.orderNumber}{" "}
                 <span className={`status-pill status-pill--${ex.orderStatus.toLowerCase()}`}>{ORDER_STATUS_LABEL[ex.orderStatus]}</span>
               </dd>
             </div>
-            <div><dt className="mono-xs">DELIVERED</dt><dd>{ex.deliveredAt ? longDate(ex.deliveredAt) : "No delivery date recorded"}</dd></div>
+            <div><dt className="mono-xs">Delivered</dt><dd>{ex.deliveredAt ? longDate(ex.deliveredAt) : "No delivery date recorded"}</dd></div>
             <div>
-              <dt className="mono-xs">EXCHANGE WINDOW · {ex.exchangeWindowDays} DAYS</dt>
+              <dt className="mono-xs">Exchange window · {ex.exchangeWindowDays} days</dt>
               <dd>
                 {ex.exchangeableUntil ? <>Until {longDate(ex.exchangeableUntil)}{windowOpenNow ? "" : " · now closed"}</> : "—"}
               </dd>
@@ -224,7 +224,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
         </section>
 
         <section className="admin-card admin-card--wide">
-          <div className="mono-label admin-card__head">PIECES BEING EXCHANGED · {pieces}</div>
+          <div className="mono-label admin-card__head">Pieces being exchanged · {pieces}</div>
           <div className="table-scroll">
             <table className="admin-table ex-admin__items">
               <thead>
@@ -238,7 +238,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
                     </td>
                     <td>
                       <span className="serif ex-admin__name">{i.name}</span>
-                      <div className="mono-xs">{[i.number, i.colour, i.size, i.sku].filter(Boolean).map((x) => upper(String(x))).join(" · ") || "—"}</div>
+                      <div className="mono-xs">{[i.number, i.colour, i.size, i.sku].filter(Boolean).join(" · ") || "—"}</div>
                     </td>
                     <td className="num">× {i.quantity}</td>
                     <td className="num tnum ex-admin__paid">{i.paidUnitKobo !== null ? naira(i.paidUnitKobo) : "—"}</td>
@@ -246,7 +246,7 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
                   </tr>
                 ))}
                 <tr>
-                  <td colSpan={3} className="ex-admin__totallabel"><b>Credit value</b> <span className="mono-xs">· WHAT THE CUSTOMER PAID, AFTER DISCOUNTS</span></td>
+                  <td colSpan={3} className="ex-admin__totallabel"><b>Credit value</b> <span className="mono-xs">· What the customer paid, after discounts</span></td>
                   <td className="ex-admin__paid" aria-hidden />
                   <td className="num tnum"><b>{naira(value)}</b></td>
                 </tr>
@@ -256,13 +256,13 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">REASON</div>
+          <div className="mono-label admin-card__head">Reason</div>
           <p className="serif ex-admin__reason">{ex.reason}</p>
           {ex.note ? <blockquote className="ex-admin__quote">“{ex.note}”</blockquote> : <p className="muted">No note from the customer.</p>}
         </section>
 
         <section className="admin-card">
-          <div className="mono-label admin-card__head">PHOTOS · {ex.photoUrls.length}</div>
+          <div className="mono-label admin-card__head">Photos · {ex.photoUrls.length}</div>
           {ex.photoUrls.length ? (
             <div className="ex-admin__photos">
               {ex.photoUrls.map((u, k) => (
@@ -278,11 +278,11 @@ export function ExchangeAdminDetail({ id }: { id: string }) {
         </section>
 
         <section className="admin-card admin-card--wide">
-          <div className="mono-label admin-card__head">TIMELINE</div>
+          <div className="mono-label admin-card__head">Timeline</div>
           <ol className="ex-admin__timeline">
             {ex.history.map((h, k) => (
               <li key={k}>
-                <span className="mono-xs">{upper(longDate(h.at))} · {new Date(h.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="mono-xs">{longDate(h.at)} · {new Date(h.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
                 <span><b>{EXCHANGE_STATUS_LABEL[h.status]}</b>{h.note ? ` — ${h.note}` : ""}</span>
               </li>
             ))}

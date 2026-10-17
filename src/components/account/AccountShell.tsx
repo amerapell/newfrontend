@@ -2,13 +2,11 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { CreditCard } from "@/components/ui/CreditCard";
 import { useAuth } from "@/context/AuthContext";
-import { useWishlist } from "@/context/WishlistContext";
 import { accountApi, exchangesApi } from "@/lib/api";
 import type { Address, CreditLedger, Exchange, Order } from "@/lib/types";
 import { AuthForms } from "./AuthForms";
-import { CreditLocked, VerifyEmailView, VerifyNoticeBar } from "./EmailVerification";
+import { VerifyEmailView, VerifyNoticeBar } from "./EmailVerification";
 
 type AccountData = {
   orders: Order[] | null;
@@ -29,19 +27,19 @@ export const useAccount = () => {
 };
 
 const NAV = [
-  { href: "/account/orders", label: "Orders", key: "orders" },
-  { href: "/account/exchanges", label: "Exchanges", key: "exchanges" },
-  { href: "/account/addresses", label: "Addresses", key: "addresses" },
-  { href: "/account/wishlist", label: "Saved", key: "saved" },
-  { href: "/account/privacy", label: "Privacy", key: "privacy" },
+  { href: "/account", label: "Overview", title: "Account" },
+  { href: "/account/orders", label: "Orders", title: "Orders" },
+  { href: "/account/exchanges", label: "Exchanges", title: "Exchanges & credit" },
+  { href: "/account/addresses", label: "Addresses", title: "Addresses" },
+  { href: "/account/wishlist", label: "Wishlist", title: "Wishlist" },
+  { href: "/account/privacy", label: "Privacy", title: "Privacy" },
 ] as const;
 
-const two = (n: number | undefined) => (n == null ? "" : String(n).padStart(2, "0"));
+const isOn = (pathname: string, href: string) => (href === "/account" ? pathname === "/account" : pathname.startsWith(href));
 
-/** Signed-in account layout (ExchangeV2 left column): greeting, nav with mono counts, exchange-credit card. */
+/** Signed-in account layout (§7): 240px list nav with --hair rules on the left, content + 26px H1 on the right. */
 export function AccountShell({ children, topBar }: { children: ReactNode; topBar?: ReactNode }) {
   const { user, status, logout } = useAuth();
-  const { ids } = useWishlist();
   const pathname = usePathname();
   const router = useRouter();
   const params = useSearchParams();
@@ -73,69 +71,47 @@ export function AccountShell({ children, topBar }: { children: ReactNode; topBar
 
   if (status === "loading") {
     return (
-      <div className="container empty empty--page" aria-busy="true">
-        <span className="mono-label">LOADING YOUR ACCOUNT…</span>
+      <div className="cm cm-page" aria-busy="true">
+        <p className="cm-soft">Loading your account…</p>
       </div>
     );
   }
   if (status === "guest" || !user) return <AuthForms />;
 
-  const counts: Record<string, string> = {
-    orders: two(orders?.length),
-    exchanges: exchanges?.some((e) => !["COMPLETED", "DECLINED"].includes(e.status)) ? "●" : two(exchanges?.length),
-    addresses: two(addresses?.length),
-    saved: two(ids.size),
-    privacy: "",
-  };
-  const latestCreditRef = exchanges?.find((e) => e.status === "CREDIT_ISSUED" || e.status === "COMPLETED")?.number ?? null;
+  const current = NAV.find((n) => isOn(pathname, n.href)) ?? NAV[0];
+  const exchangeOpen = exchanges?.some((e) => !["COMPLETED", "DECLINED"].includes(e.status));
 
   return (
     <Ctx.Provider value={{ orders, addresses, credit, exchanges, reload, setAddresses, pendingCredit, setPendingCredit }}>
       {topBar}
-      {user.emailVerified === false && <VerifyNoticeBar />}
-      <div className="container account">
-        <aside className="account__aside">
-          <div>
-            <div className="mono-label">ACCOUNT</div>
-            <div className="serif account__hello">
-              Hello, <em>{user.firstName || "there"}</em>
-            </div>
-          </div>
-          <nav aria-label="Account" className="account__nav">
-            {NAV.map((n) => {
-              const on = pathname.startsWith(n.href);
-              return (
-                <Link key={n.href} href={n.href} className={`account__link${on ? " is-on" : ""}`} aria-current={on ? "page" : undefined}>
-                  <span>{n.label}</span>
-                  <span className={`mono-xs${counts[n.key] === "●" ? " ink" : ""}`}>{counts[n.key]}</span>
-                </Link>
-              );
-            })}
-            <button type="button" className="account__link account__signout" onClick={() => logout().then(() => router.push("/account"))}>
-              <span>Sign out</span>
-              <span className="mono-xs">→</span>
-            </button>
+      <div className="cm cm-page">
+        <div className="cm-acc">
+          <nav aria-label="Account" className="cm-acc__nav">
+            <ul>
+              {NAV.map((n) => {
+                const on = isOn(pathname, n.href);
+                return (
+                  <li key={n.href}>
+                    <Link href={n.href} className={`cm-acc__link${on ? " is-on" : ""}`} aria-current={on ? "page" : undefined}>
+                      {n.label}
+                      {n.href === "/account/exchanges" && exchangeOpen && <span className="cm-soft"> (open)</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+              <li>
+                <button type="button" className="cm-acc__link" onClick={() => logout().then(() => router.push("/account"))}>
+                  Sign out
+                </button>
+              </li>
+            </ul>
           </nav>
-          {user.emailVerified === false ? (
-            <CreditLocked />
-          ) : (
-            <CreditCard
-              balanceKobo={pendingCredit ? pendingCredit.amountKobo : credit?.balanceKobo ?? user.creditBalanceKobo}
-              state={pendingCredit ? "PENDING · ADDED ON RECEIPT" : "AVAILABLE"}
-              reference={pendingCredit?.ref ?? latestCreditRef}
-            />
-          )}
-          {credit && credit.entries.some((e) => e.expiresAt) && !pendingCredit && (
-            <p className="mono-xs">
-              CREDIT NEVER PAID OUT AS CASH ·{" "}
-              {(() => {
-                const exp = credit.entries.filter((e) => e.amountKobo > 0 && e.expiresAt).map((e) => e.expiresAt!).sort()[0];
-                return exp ? `EARLIEST EXPIRES ${new Date(exp).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}` : "";
-              })()}
-            </p>
-          )}
-        </aside>
-        <section className="account__main">{children}</section>
+          <section className="cm-acc__main">
+            <h1 className="cm-title">{current.title}</h1>
+            {user.emailVerified === false && <VerifyNoticeBar />}
+            {children}
+          </section>
+        </div>
       </div>
     </Ctx.Provider>
   );
