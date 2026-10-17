@@ -49,19 +49,21 @@ export function Dashboard() {
                 <span>Low stock</span>
                 <Link href="/admin/products" className="ap-link small-link">Products →</Link>
               </div>
-              <table className="admin-table">
-                <thead><tr><th>SKU</th><th>Piece</th><th className="num">Available</th></tr></thead>
-                <tbody>
-                  {data.lowStock.map((l) => (
-                    <tr key={l.sku}>
-                      <td className="mono-xs">{l.sku}</td>
-                      <td>{l.name}</td>
-                      <td className={`num tnum${l.available === 0 ? " red" : ""}`}>{l.available}</td>
-                    </tr>
-                  ))}
-                  {!data.lowStock.length && <tr><td colSpan={3} className="muted">Nothing running low.</td></tr>}
-                </tbody>
-              </table>
+              <div className="table-scroll">
+                <table className="admin-table">
+                  <thead><tr><th>SKU</th><th>Piece</th><th className="num">Available</th></tr></thead>
+                  <tbody>
+                    {data.lowStock.map((l) => (
+                      <tr key={l.sku}>
+                        <td className="mono-xs">{l.sku}</td>
+                        <td>{l.name}</td>
+                        <td className={`num tnum${l.available === 0 ? " red" : ""}`}>{l.available}</td>
+                      </tr>
+                    ))}
+                    {!data.lowStock.length && <tr><td colSpan={3} className="muted">Nothing running low.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
         </>

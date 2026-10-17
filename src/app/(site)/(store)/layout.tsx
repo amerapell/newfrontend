@@ -1,6 +1,7 @@
 import { PromoBar } from "@/components/chrome/PromoBar";
 import { Header } from "@/components/chrome/Header";
 import { Footer } from "@/components/chrome/Footer";
+import { WelcomePopup } from "@/components/chrome/WelcomePopup";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
       <Footer />
+      <WelcomePopup />
     </>
   );
 }

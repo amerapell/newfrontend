@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   freeDeliveryThresholdKobo: null,
   tickerText: [],
   serviceImages: { stylist: null, store: null, exchange: null },
+  welcomePopup: { enabled: false, title: "Welcome to Amerapelle", text: "", imageUrl: null },
   drop: null,
 };
 

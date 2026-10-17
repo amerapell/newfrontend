@@ -254,7 +254,7 @@ export const MOCK_COLLECTIONS: Collection[] = Object.keys(COLLECTION_NAMES).map(
   goLiveAt: slug === "night-edit" ? DROP_LIVE_AT : slug === "harmattan-edit" ? NEXT_DROP_AT : null,
   heroImageUrl: HERO[slug] ?? null,
   homeOrder: HOME_ORDER[slug] ?? null,
-  tagline: slug === "night-edit" ? "Discover the drop" : null,
+  tagline: null,
 }));
 
 
@@ -273,6 +273,7 @@ export const MOCK_SETTINGS: StoreSettings = {
   creditExpiryDays: 365,
   freeDeliveryThresholdKobo: 300_000_00,
   serviceImages: { stylist: null, store: null, exchange: null },
+  welcomePopup: { enabled: true, title: "Welcome to Amerapelle", text: "Let's keep in touch. Be the first to discover new pieces and hear about private events at our Lagos store.", imageUrl: null },
   tickerText: ["Discover Drop 04 — The Night Edit", "Delivery across Nigeria", "Exchange, never a refund"],
   drop: { title: "The Night Edit", collectionSlug: "night-edit", goLiveAt: DROP_LIVE_AT, firstRunTotal: 48, firstRunLeft: 9 },
 };

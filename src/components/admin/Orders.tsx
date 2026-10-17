@@ -148,23 +148,25 @@ export function OrderAdminDetail({ id }: { id: string }) {
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Items</div>
-          <table className="admin-table">
-            <tbody>
-              {o.items.map((i) => (
-                <tr key={i.id}>
-                  <td className="mono-xs">{i.number}</td>
-                  <td>{i.name}<div className="mono-xs">{[i.colour, i.size].filter(Boolean).join(" · ")}</div></td>
-                  <td className="num">× {i.quantity}</td>
-                  <td className="num tnum">{naira(i.unitKobo * i.quantity)}</td>
-                </tr>
-              ))}
-              <tr><td colSpan={3}>Subtotal</td><td className="num tnum">{naira(o.subtotalKobo)}</td></tr>
-              {o.discountKobo > 0 && <tr><td colSpan={3}>Discount</td><td className="num tnum">−{naira(o.discountKobo)}</td></tr>}
-              <tr><td colSpan={3}>Delivery</td><td className="num tnum">{naira(o.deliveryKobo)}</td></tr>
-              {o.creditAppliedKobo > 0 && <tr><td colSpan={3}>Exchange credit</td><td className="num tnum">−{naira(o.creditAppliedKobo)}</td></tr>}
-              <tr><td colSpan={3}><b>Amount paid</b></td><td className="num tnum"><b>{naira(o.amountDueKobo)}</b></td></tr>
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="admin-table">
+              <tbody>
+                {o.items.map((i) => (
+                  <tr key={i.id}>
+                    <td className="mono-xs">{i.number}</td>
+                    <td>{i.name}<div className="mono-xs">{[i.colour, i.size].filter(Boolean).join(" · ")}</div></td>
+                    <td className="num">× {i.quantity}</td>
+                    <td className="num tnum">{naira(i.unitKobo * i.quantity)}</td>
+                  </tr>
+                ))}
+                <tr><td colSpan={3}>Subtotal</td><td className="num tnum">{naira(o.subtotalKobo)}</td></tr>
+                {o.discountKobo > 0 && <tr><td colSpan={3}>Discount</td><td className="num tnum">−{naira(o.discountKobo)}</td></tr>}
+                <tr><td colSpan={3}>Delivery</td><td className="num tnum">{naira(o.deliveryKobo)}</td></tr>
+                {o.creditAppliedKobo > 0 && <tr><td colSpan={3}>Exchange credit</td><td className="num tnum">−{naira(o.creditAppliedKobo)}</td></tr>}
+                <tr><td colSpan={3}><b>Amount paid</b></td><td className="num tnum"><b>{naira(o.amountDueKobo)}</b></td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
         <section className="admin-card admin-card--wide">
           <div className="mono-label admin-card__head">Notes · internal</div>

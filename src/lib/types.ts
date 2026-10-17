@@ -234,6 +234,8 @@ export type StoreSettings = {
   tickerText: string[];
   /** Home "Amerapelle at your service" card photos; null → plain ground with the icon. */
   serviceImages?: ServiceImages;
+  /** First-visit "Welcome to Amerapelle" newsletter pop-up. */
+  welcomePopup?: WelcomePopup;
   drop: DropSettings | null;
 };
 
@@ -450,4 +452,11 @@ export interface ServiceImages {
   stylist: string | null;
   store: string | null;
   exchange: string | null;
+}
+
+export interface WelcomePopup {
+  enabled: boolean;
+  title: string;
+  text: string;
+  imageUrl: string | null;
 }

@@ -11,6 +11,11 @@
 .admin__nav { flex: 0 0 220px; border-right: 1px solid var(--hair); min-height: calc(100vh - 60px); padding: 16px 0; display: flex; flex-direction: column; position: sticky; top: 60px; align-self: flex-start; }
 .admin__navlink { min-height: 40px; display: flex; align-items: center; padding: 0 24px; font-size: 13px; border-left: 2px solid transparent; }
 .admin__navlink.is-on { border-left-color: var(--ink); font-weight: 600; background: var(--wash); }
+/* View store / Sign out: pinned to the bottom of the menu */
+.admin__navfoot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; }
+.admin__navlink--foot { justify-content: space-between; gap: 12px; color: var(--grey); width: 100%; background: none; border-top: 0; border-right: 0; border-bottom: 0; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.admin__navlink--foot:hover { color: var(--ink); background: var(--wash); }
+.admin__navlink--foot svg { flex: none; }
 .admin__main { flex: 1; min-width: 0; padding: 32px 40px 80px; display: flex; flex-direction: column; gap: 24px; }
 .admin-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--ink); padding-bottom: 16px; }
 .admin-head__title { font-size: 36px; line-height: 1; letter-spacing: -0.02em; margin-top: 6px; }
@@ -75,8 +80,12 @@
 }
 @media (max-width: 900px) {
   .admin__menu { display: inline-grid; }
-  .admin__nav { position: fixed; left: 0; top: 60px; bottom: 0; background: var(--white); z-index: 30; transform: translateX(-100%); transition: transform 300ms var(--ease-out); min-height: 0; }
-  .admin__nav.is-open { transform: none; border-right: 1px solid var(--ink); }
+  /* Phone menu: a full-screen panel under the top bar, links large enough to tap */
+  .admin__nav { position: fixed; top: 60px; left: 0; right: 0; bottom: auto; height: calc(100vh - 60px); height: calc(100dvh - 60px); width: 100%; background: var(--white); z-index: 30; transform: translateX(-100%); visibility: hidden; transition: transform 300ms var(--ease-out), visibility 0s 300ms; min-height: 0; border-right: 0; padding: 8px 0 calc(16px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+  .admin__nav.is-open { transform: none; visibility: visible; transition: transform 300ms var(--ease-out); }
+  .admin__navlink { min-height: 52px; padding: 0 20px; font-size: 17px; border-bottom: 1px solid var(--hair); }
+  .admin__navfoot { border-top: 0; padding-top: 24px; }
+  .admin__navlink--foot { font-size: 15px; border-bottom: 0; }
   .admin__main { padding: 20px 16px 64px; }
   .admin-head__title { font-size: 27px; }
   .admin-grid { grid-template-columns: 1fr; }
@@ -208,3 +217,19 @@
 }
 .slip__print { align-self: flex-start; }
 .admin__top a, .admin__top button { white-space: nowrap; }
+
+/* Phones: wide admin tables never push the page sideways */
+.table-scroll { max-width: 100%; -webkit-overflow-scrolling: touch; }
+@media (max-width: 700px) {
+  /* Edit-in-place tables (delivery zones, promo codes) become one card per row */
+  .admin-table--cards thead { display: none; }
+  .admin-table--cards, .admin-table--cards tbody, .admin-table--cards tr, .admin-table--cards td { display: block; width: 100%; }
+  .admin-table--cards tr { border: 1px solid var(--line); padding: 12px 14px; margin-bottom: 12px; }
+  .admin-table--cards td { border: 0; padding: 6px 0; text-align: left; }
+  .admin-table--cards td.num { text-align: left; }
+  .admin-table--cards td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; color: var(--grey); margin-bottom: 4px; }
+  .admin-table--cards .admin-table__key { font-size: 13px; padding-bottom: 8px; border-bottom: 1px solid var(--hair); margin-bottom: 4px; }
+  .admin-table--cards .admin-input, .admin-table--cards .admin-input--num { width: 100%; text-align: left; }
+  .admin-table--cards td:last-child:empty { display: none; }
+  .admin-table--cards .btn { width: 100%; }
+}

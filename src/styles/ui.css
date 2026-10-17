@@ -172,3 +172,12 @@
 .notice { padding: 2px 0 2px 12px; border-left: 1px solid var(--ink); font-size: var(--fs-small); }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--hair); }
 .section-head__title { font-size: var(--fs-title); }
+
+/* ---------- Welcome pop-up (first visit) ---------- */
+.welcome .drawer__body { display: flex; flex-direction: column; gap: 24px; }
+.welcome__img { position: relative; aspect-ratio: 3 / 2; background: var(--stage); overflow: hidden; }
+.welcome__text { font-size: 17px; line-height: 1.5; }
+.welcome__form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.welcome__form .line-field input::placeholder { color: var(--grey); }
+.welcome__done { font-size: 17px; }
+.welcome__err { color: var(--red, #b3261e); }

@@ -142,19 +142,21 @@ export function CustomerAdminDetail({ email }: { email: string }) {
         <section className="admin-card">
           <div className="mono-label admin-card__head">Credit ledger</div>
           {c.credit.length ? (
-            <table className="admin-table">
-              <thead><tr><th>Date</th><th>Reason</th><th className="num">Amount</th><th>Expires</th></tr></thead>
-              <tbody>
-                {c.credit.map((e) => (
-                  <tr key={e.id}>
-                    <td className="mono-xs">{longDate(e.createdAt)}</td>
-                    <td>{creditReasonLabel(e.reason)}</td>
-                    <td className="num tnum">{e.amountKobo < 0 ? `−${naira(-e.amountKobo)}` : naira(e.amountKobo)}</td>
-                    <td className="mono-xs">{e.expiresAt ? longDate(e.expiresAt) : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead><tr><th>Date</th><th>Reason</th><th className="num">Amount</th><th>Expires</th></tr></thead>
+                <tbody>
+                  {c.credit.map((e) => (
+                    <tr key={e.id}>
+                      <td className="mono-xs">{longDate(e.createdAt)}</td>
+                      <td>{creditReasonLabel(e.reason)}</td>
+                      <td className="num tnum">{e.amountKobo < 0 ? `−${naira(-e.amountKobo)}` : naira(e.amountKobo)}</td>
+                      <td className="mono-xs">{e.expiresAt ? longDate(e.expiresAt) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p className="muted">No credit activity.</p>
           )}

@@ -86,24 +86,26 @@ export function ProductsList() {
           {STATUS.map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
-      <table className="admin-table">
-        <thead>
-          <tr><th>No.</th><th>Piece</th><th>Status</th><th className="num">Price</th><th className="num">In stock</th><th /></tr>
-        </thead>
-        <tbody>
-          {loading && !data && <tr><td colSpan={6} className="mono-label">Loading…</td></tr>}
-          {data?.items.map((p) => (
-            <tr key={p.id}>
-              <td className="mono-xs">{p.number}</td>
-              <td><Link href={`/admin/products/${p.id}`} className="ap-link">{p.name}</Link></td>
-              <td><span className={`status-pill status-pill--${p.status.toLowerCase()}`}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td>
-              <td className="num tnum">{naira(p.priceKobo)}</td>
-              <td className={`num tnum${p.available <= 2 ? " red" : ""}`}>{p.available}</td>
-              <td className="num"><Link href={`/p/${p.slug}`} target="_blank" className="mono-xs">View ↗</Link></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table className="admin-table">
+          <thead>
+            <tr><th>No.</th><th>Piece</th><th>Status</th><th className="num">Price</th><th className="num">In stock</th><th /></tr>
+          </thead>
+          <tbody>
+            {loading && !data && <tr><td colSpan={6} className="mono-label">Loading…</td></tr>}
+            {data?.items.map((p) => (
+              <tr key={p.id}>
+                <td className="mono-xs">{p.number}</td>
+                <td><Link href={`/admin/products/${p.id}`} className="ap-link">{p.name}</Link></td>
+                <td><span className={`status-pill status-pill--${p.status.toLowerCase()}`}>{p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td>
+                <td className="num tnum">{naira(p.priceKobo)}</td>
+                <td className={`num tnum${p.available <= 2 ? " red" : ""}`}>{p.available}</td>
+                <td className="num"><Link href={`/p/${p.slug}`} target="_blank" className="mono-xs">View ↗</Link></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

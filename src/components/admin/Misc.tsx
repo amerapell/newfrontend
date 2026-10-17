@@ -217,23 +217,25 @@ export function CollectionsAdmin() {
           <div className="row gap-16"><button className="btn btn--primary" onClick={save}>Save</button><button className="u-link" onClick={() => setEditing(null)}>Cancel</button></div>
         </section>
       )}
-      <table className="admin-table">
-        <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th className="num">Home</th><th /></tr></thead>
-        <tbody>
-          {data?.map((c) => (
-            <tr key={c.id}>
-              <td>{c.name}</td>
-              <td className="t-grey">/c/{c.slug}</td>
-              <td className="num tnum">{c.productCount ?? c.count}</td>
-              <td className="num tnum">{c.homeOrder ?? "—"}</td>
-              <td className="num">
-                <button className="u-link" onClick={() => setEditing(c)}>Edit</button>{" "}
-                <button className="u-link t-grey" onClick={async () => { if (confirm(`Delete ${c.name}? Products stay.`) && (await mutate(() => adminApi.deleteCollection(c.id), "Deleted.")) !== null) setData(data.filter((x) => x.id !== c.id)); }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table className="admin-table">
+          <thead><tr><th>Name</th><th>Slug</th><th className="num">Pieces</th><th className="num">Home</th><th /></tr></thead>
+          <tbody>
+            {data?.map((c) => (
+              <tr key={c.id}>
+                <td>{c.name}</td>
+                <td className="t-grey">/c/{c.slug}</td>
+                <td className="num tnum">{c.productCount ?? c.count}</td>
+                <td className="num tnum">{c.homeOrder ?? "—"}</td>
+                <td className="num">
+                  <button className="u-link" onClick={() => setEditing(c)}>Edit</button>{" "}
+                  <button className="u-link t-grey" onClick={async () => { if (confirm(`Delete ${c.name}? Products stay.`) && (await mutate(() => adminApi.deleteCollection(c.id), "Deleted.")) !== null) setData(data.filter((x) => x.id !== c.id)); }}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -300,17 +302,17 @@ export function DiscountsAdmin() {
           </div>
         </form>
       </section>
-      <table className="admin-table">
+      <table className="admin-table admin-table--cards">
         <thead><tr><th>Code</th><th>Type</th><th className="num">Value</th><th className="num">Min</th><th className="num">Uses</th><th>Window</th><th /></tr></thead>
         <tbody>
           {data?.map((x) => (
             <tr key={x.id}>
-              <td className="mono">{x.code}</td>
-              <td className="mono-xs">{x.type.replace("_", " ")}</td>
-              <td className="num tnum">{x.type === "PERCENT" ? `${x.value}%` : x.type === "FIXED" ? naira(x.value) : "—"}</td>
-              <td className="num tnum">{x.minSubtotalKobo ? naira(x.minSubtotalKobo) : "—"}</td>
-              <td className="num tnum">{x.uses ?? 0}{x.maxUses ? ` / ${x.maxUses}` : ""}</td>
-              <td className="mono-xs">{x.startsAt ? longDate(x.startsAt) : "Now"} → {x.endsAt ? longDate(x.endsAt) : "∞"}</td>
+              <td className="mono admin-table__key">{x.code}</td>
+              <td className="mono-xs" data-label="Type">{x.type.replace("_", " ")}</td>
+              <td className="num tnum" data-label="Value">{x.type === "PERCENT" ? `${x.value}%` : x.type === "FIXED" ? naira(x.value) : "—"}</td>
+              <td className="num tnum" data-label="Min spend">{x.minSubtotalKobo ? naira(x.minSubtotalKobo) : "—"}</td>
+              <td className="num tnum" data-label="Uses">{x.uses ?? 0}{x.maxUses ? ` / ${x.maxUses}` : ""}</td>
+              <td className="mono-xs" data-label="Runs">{x.startsAt ? longDate(x.startsAt) : "Now"} → {x.endsAt ? longDate(x.endsAt) : "∞"}</td>
               <td className="num">
                 <div className="row gap-12">
                   <button className="ap-link small-link" onClick={() => startEdit(x)}>Edit</button>
@@ -334,19 +336,19 @@ export function ZonesAdmin() {
   return (
     <>
       <AdminHead title="Delivery zones" />
-      <table className="admin-table">
-        <thead><tr><th>Zone</th><th>Name</th><th>ETA text</th><th className="num">Fee ₦</th><th>Active</th><th /></tr></thead>
+      <table className="admin-table admin-table--cards">
+        <thead><tr><th>Zone</th><th>Name</th><th>Delivery time</th><th className="num">Fee ₦</th><th>Active</th><th /></tr></thead>
         <tbody>
           {data?.map((z) => {
             const d = { ...z, ...draft[z.id] };
             const upd = (p: Partial<DeliveryZone>) => setDraft({ ...draft, [z.id]: { ...draft[z.id], ...p } });
             return (
               <tr key={z.id}>
-                <td className="mono-xs">{z.code}</td>
-                <td><input className="admin-input" value={d.name} onChange={(e) => upd({ name: e.target.value })} aria-label={`${z.code} name`} /></td>
-                <td><input className="admin-input" value={d.etaText} onChange={(e) => upd({ etaText: e.target.value })} aria-label={`${z.code} ETA`} /></td>
-                <td className="num"><input className="admin-input admin-input--num" inputMode="numeric" value={nairaIn(d.feeKobo) || "0"} onChange={(e) => upd({ feeKobo: koboIn(e.target.value) })} aria-label={`${z.code} fee`} /></td>
-                <td><input type="checkbox" checked={d.active} onChange={(e) => upd({ active: e.target.checked })} aria-label={`${z.code} active`} /></td>
+                <td className="mono-xs admin-table__key">{z.code.replace(/_/g, " ")}</td>
+                <td data-label="Name"><input className="admin-input" value={d.name} onChange={(e) => upd({ name: e.target.value })} aria-label={`${z.code} name`} /></td>
+                <td data-label="Delivery time"><input className="admin-input" value={d.etaText} onChange={(e) => upd({ etaText: e.target.value })} aria-label={`${z.code} ETA`} /></td>
+                <td className="num" data-label="Fee ₦"><input className="admin-input admin-input--num" inputMode="numeric" value={nairaIn(d.feeKobo) || "0"} onChange={(e) => upd({ feeKobo: koboIn(e.target.value) })} aria-label={`${z.code} fee`} /></td>
+                <td data-label="Active"><input type="checkbox" checked={d.active} onChange={(e) => upd({ active: e.target.checked })} aria-label={`${z.code} active`} /></td>
                 <td className="num">
                   {draft[z.id] && (
                     <button className="btn btn--ghost" onClick={async () => { const r = await mutate(() => adminApi.updateZone(z.id, draft[z.id]), "Zone saved."); if (r) { setData(data.map((x) => (x.id === z.id ? r : x))); const n = { ...draft }; delete n[z.id]; setDraft(n); } }}>Save</button>
@@ -425,6 +427,7 @@ export function SettingsAdmin() {
   }, [data]);
   if (!s) return <p className="mono-label">Loading…</p>;
   const set = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) => setS({ ...s, [k]: v });
+  const welcome = s.welcomePopup ?? { enabled: true, title: "Welcome to Amerapelle", text: "", imageUrl: null };
   return (
     <>
       <AdminHead title="Settings" actions={<button className="btn btn--short" onClick={() => mutate(() => adminApi.updateSettings(s), "Settings saved.")}>Save settings</button>} />
@@ -473,6 +476,13 @@ export function SettingsAdmin() {
               />
             ))}
           </div>
+        </section>
+        <section className="admin-card">
+          <div className="mono-label admin-card__head">Welcome pop-up</div>
+          <CheckRow checked={s.welcomePopup?.enabled ?? false} onChange={(v) => set("welcomePopup", { ...welcome, enabled: v })} id="welcome-on" sub="Shown once to new visitors, 8 seconds in. Never during checkout.">Show the welcome pop-up</CheckRow>
+          <FieldBox full label="Title" maxLength={80} value={welcome.title} onChange={(e) => set("welcomePopup", { ...welcome, title: e.target.value })} />
+          <TextAreaBox full label="Text" rows={3} maxLength={300} value={welcome.text} onChange={(e) => set("welcomePopup", { ...welcome, text: e.target.value })} />
+          <ImageField label="Picture · landscape" empty="No picture — text and sign-up only" value={welcome.imageUrl} onChange={(url) => set("welcomePopup", { ...welcome, imageUrl: url })} allowCutout />
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Top bar</div>

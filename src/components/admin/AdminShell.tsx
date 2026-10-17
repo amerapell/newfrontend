@@ -63,6 +63,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, [isLogin, pathname, router]);
 
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const signOut = useCallback(() => {
     tokens.setAdmin(null);
@@ -85,14 +96,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ signOut, onError }}>
       <div className="admin">
         <header className="admin__top">
-          <button className="icon-btn admin__menu" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden><path d="M4 9h16M4 15h10" /></svg>
+          <button className="icon-btn admin__menu" aria-label={open ? "Close menu" : "Menu"} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+            {open ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden><path d="M6 6l12 12M18 6 6 18" /></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden><path d="M4 9h16M4 15h10" /></svg>
+            )}
           </button>
           <Link href="/admin" className="admin__mark" aria-label="Amerapelle admin"><Logo size={28} /></Link>
           <span className="mono-label">Admin{isUsingMocks() ? " · mock data" : ""}</span>
-          <span className="admin__spacer" />
-          <a href="/" target="_blank" rel="noopener" className="ap-link small-link">View store ↗</a>
-          <button className="ap-link small-link" onClick={signOut}>Sign out</button>
         </header>
         <div className="admin__body">
           <nav className={`admin__nav${open ? " is-open" : ""}`} aria-label="Admin">
@@ -104,6 +116,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <div className="admin__navfoot">
+              <a href="/" target="_blank" rel="noopener" className="admin__navlink admin__navlink--foot">
+                <span>View store</span>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden><path d="M6 3h7v7M13 3 4 12" /></svg>
+              </a>
+              <button type="button" className="admin__navlink admin__navlink--foot admin__signout" onClick={signOut}>
+                <span>Sign out</span>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden><path d="M10 3h3v10h-3M7 5 4 8l3 3M4 8h7" /></svg>
+              </button>
+            </div>
           </nav>
           <main id="main" className="admin__main">
             {needsTotp && !pathname.startsWith("/admin/settings") && (
