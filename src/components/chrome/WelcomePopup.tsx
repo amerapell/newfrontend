@@ -56,6 +56,14 @@ export function WelcomePopup() {
     };
   }, [w?.enabled, quiet]);
 
+  // Phones: the sheet starts exactly where the header ends, so the brand stays visible above it.
+  useEffect(() => {
+    if (!open) return;
+    const header = document.querySelector(".site-header");
+    const bottom = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 96;
+    document.documentElement.style.setProperty("--welcome-top", `${bottom + 8}px`);
+  }, [open]);
+
   if (!w?.enabled) return null;
   const close = () => {
     markSeen();
