@@ -9,7 +9,7 @@ import { contentApi } from "@/lib/api";
 import { apiMessage } from "@/lib/format";
 
 const SEEN_KEY = "ap_welcome_seen";
-const DELAY_MS = 8000;
+const DELAY_MS = 1000;
 /** Never interrupt someone who is paying, signing in or checking an order. */
 const QUIET = ["/checkout", "/bag", "/account", "/orders", "/policies"];
 

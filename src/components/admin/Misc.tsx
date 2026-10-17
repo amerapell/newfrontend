@@ -479,7 +479,7 @@ export function SettingsAdmin() {
         </section>
         <section className="admin-card">
           <div className="mono-label admin-card__head">Welcome pop-up</div>
-          <CheckRow checked={s.welcomePopup?.enabled ?? false} onChange={(v) => set("welcomePopup", { ...welcome, enabled: v })} id="welcome-on" sub="Shown once to new visitors, 8 seconds in. Never during checkout.">Show the welcome pop-up</CheckRow>
+          <CheckRow checked={s.welcomePopup?.enabled ?? false} onChange={(v) => set("welcomePopup", { ...welcome, enabled: v })} id="welcome-on" sub="Shown to new visitors 1 second after they arrive, until they close it. Never during checkout.">Show the welcome pop-up</CheckRow>
           <FieldBox full label="Title" maxLength={80} value={welcome.title} onChange={(e) => set("welcomePopup", { ...welcome, title: e.target.value })} />
           <TextAreaBox full label="Text" rows={3} maxLength={300} value={welcome.text} onChange={(e) => set("welcomePopup", { ...welcome, text: e.target.value })} />
           <ImageField label="Picture · landscape" empty="No picture — text and sign-up only" value={welcome.imageUrl} onChange={(url) => set("welcomePopup", { ...welcome, imageUrl: url })} allowCutout />
