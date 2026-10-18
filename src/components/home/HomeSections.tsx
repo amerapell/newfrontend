@@ -1,10 +1,24 @@
 import Link from "next/link";
 import { BagIcon, WhatsAppIcon } from "@/components/chrome/Icons";
+import { Markdown } from "@/components/ui/Markdown";
 import { Photo, realImage } from "@/components/ui/Photo";
 import { whatsappLink } from "@/lib/product";
-import type { StoreSettings } from "@/lib/types";
+import type { ContentPage, StoreSettings } from "@/lib/types";
 
-/** Editorial story panel (§7.4): full-bleed, "Cut in Lagos, for the evenings that matter." → /about. */
+/** Home introduction — the client's brand text, edited in admin → Pages → "home" (title = the small line on top). */
+export function HomeIntro({ page }: { page: ContentPage | null }) {
+  if (!page?.bodyMarkdown.trim()) return null;
+  return (
+    <section className="home-intro container" aria-label="About Amerapelle">
+      {page.title && <p className="home-intro__eyebrow">{page.title}</p>}
+      <div className="home-intro__body">
+        <Markdown source={page.bodyMarkdown} />
+      </div>
+    </section>
+  );
+}
+
+/** Editorial story panel (§7.4): full-bleed, "Beyond Fashion. A Statement of Distinction." → /about. */
 export function StoryPanel({ image }: { image: string | null | undefined }) {
   return (
     <section className={`hero hero--story${image ? " hero--photo on-dark" : " hero--empty"}`} aria-label="Our story">
@@ -12,7 +26,7 @@ export function StoryPanel({ image }: { image: string | null | undefined }) {
         <Photo src={image} alt="" sizes="100vw" />
       </Link>
       <div className="hero__cap">
-        <h2 className="hero__title">Cut in Lagos, for the evenings that matter.</h2>
+        <h2 className="hero__title">Beyond Fashion. A Statement of Distinction.</h2>
         <Link href="/about" className="u-link hero__link">Read our story</Link>
       </div>
     </section>

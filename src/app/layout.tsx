@@ -16,8 +16,8 @@ import { SITE_URL } from "@/lib/env";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Amerapelle — Quiet luxury, loud entrance", template: "%s · Amerapelle" },
-  description: "Lagos luxury fashion: tailoring, leather and silk in limited runs. Delivered across Nigeria. Exchange, not refund.",
+  title: { default: "Amerapelle — A World of Style. A Signature of Luxury.", template: "%s · Amerapelle" },
+  description: "Lagos-based luxury multi-brand fashion house: fashion, statement handbags, footwear and accessories. Delivered across Nigeria.",
   applicationName: "Amerapelle",
   openGraph: { type: "website", siteName: "Amerapelle", locale: "en_NG", url: SITE_URL },
   twitter: { card: "summary_large_image" },

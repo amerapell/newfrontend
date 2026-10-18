@@ -170,7 +170,7 @@ export function AuthForms() {
             <FieldBox label="Email*" type="email" autoComplete="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required />
             <FieldBox label="Phone (optional)" type="tel" autoComplete="tel-national" value={phone} onChange={(e) => setPhone(e.target.value)} hint="Nigerian number, e.g. 0803 000 0000." />
             <FieldBox label="Password*" type="password" autoComplete="new-password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={8} hint="At least 8 characters." />
-            <Check id="reg-consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">Email me about new drops and private sales</Check>
+            <Check id="reg-consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">Email me about new arrivals and private sales</Check>
             <p className="cm-small cm-soft">
               By creating an account you agree to our <Link href="/policies/terms" className="u-link">Terms</Link> and <Link href="/policies/privacy" className="u-link">Privacy Policy</Link>.
             </p>

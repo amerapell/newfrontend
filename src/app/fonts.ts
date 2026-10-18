@@ -9,7 +9,7 @@ import localFont from "next/font/local";
  * It is split into a latin face and a latin-ext face (latin-ext carries ₦, U+20A6); both are chained in
  * --font-serif so the naira sign renders in Newsreader.
  *
- * Montserrat is used only inside the logo wordmark (700) and its stacked tagline (600 italic).
+ * Montserrat is used only inside the logo wordmark (700) and its stacked tagline (700 italic).
  */
 export const serifLatin = localFont({
   src: [
@@ -30,11 +30,11 @@ export const serifExt = localFont({
   adjustFontFallback: false,
   preload: false,
 });
-/** Logo only: Montserrat 700 (wordmark) + 600 italic (stacked tagline). */
+/** Logo only: Montserrat 700 (wordmark) + 700 italic (stacked tagline). */
 export const logoFont = localFont({
   src: [
     { path: "./fonts/montserrat-latin-700-normal.woff2", weight: "700", style: "normal" },
-    { path: "./fonts/montserrat-latin-600-italic.woff2", weight: "600", style: "italic" },
+    { path: "./fonts/montserrat-latin-700-italic.woff2", weight: "700", style: "italic" },
   ],
   display: "swap",
   adjustFontFallback: false,

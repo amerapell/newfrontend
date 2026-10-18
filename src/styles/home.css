@@ -75,3 +75,18 @@
 @media (max-width: 1023px) {
   :root:has(.promo) .home > .hero:first-of-type { height: calc(80vh - var(--promo-h)); height: calc(80svh - var(--promo-h)); }
 }
+
+/* ---------- Home introduction (admin → Pages → "home") ---------- */
+.home-intro { padding-top: 96px; padding-bottom: 96px; text-align: center; }
+.home-intro__eyebrow { font-size: var(--fs-small); letter-spacing: .3em; margin-right: -.3em; color: var(--grey); margin-bottom: 20px; }
+.home-intro__body { max-width: 680px; margin: 0 auto; }
+.home-intro .prose { font-size: 15px; line-height: 1.7; }
+.home-intro .prose h2 { font-size: 26px; line-height: 1.3; letter-spacing: .04em; margin: 0 0 12px; text-wrap: balance; }
+.home-intro .prose h3 { font-size: var(--fs-title); font-style: italic; margin: 0 0 28px; }
+.home-intro .prose p { margin: 0 0 16px; }
+.home-intro .prose p:last-child { margin: 28px 0 0; }
+@media (max-width: 767px) {
+  .home-intro { padding-top: 64px; padding-bottom: 64px; }
+  .home-intro .prose h2 { font-size: 22px; }
+  .home-intro .prose h3 { font-size: 18px; margin-bottom: 20px; }
+}

@@ -549,7 +549,7 @@ export function FaqAdmin() {
 
 /* ---------------- Pages ---------------- */
 
-const PAGE_SLUGS = ["about", "delivery", "exchanges", "privacy", "terms"];
+const PAGE_SLUGS = ["home", "about", "delivery", "exchanges", "privacy", "terms"];
 
 export function PagesAdmin() {
   const [slug, setSlug] = useState("about");

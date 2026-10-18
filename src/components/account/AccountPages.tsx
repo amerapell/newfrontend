@@ -98,7 +98,7 @@ function ProfileForm() {
         <FieldBox label="Last name" autoComplete="family-name" value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} />
         <FieldBox full label="Phone (+234)" type="tel" autoComplete="tel-national" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       </div>
-      <Check id="me-consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">Email me about new drops and private sales</Check>
+      <Check id="me-consent" checked={consent} onChange={setConsent} sub="Optional. Unsubscribe any time.">Email me about new arrivals and private sales</Check>
       {err && <p className="cm-error" role="alert">{err}</p>}
       <button className="btn btn--secondary cm-btn-auto" disabled={busy}>{busy ? "Saving…" : "Save details"}</button>
     </form>

@@ -9,9 +9,17 @@
 .logo__text { display: inline-flex; flex-direction: column; gap: 4px; }
 .logo__word { font-family: var(--logo); font-weight: 700; font-size: calc(var(--logo-size) * .5); letter-spacing: .14em; color: #05153c; }
 .logo--light .logo__word { color: var(--white); }
-.logo__tagline { font-family: var(--logo); font-weight: 600; font-style: italic; font-size: calc(var(--logo-size) * .14); letter-spacing: .12em; color: #05153c; }
 .logo--stacked { flex-direction: column; text-align: center; gap: calc(var(--logo-size) * .2); }
-.logo--stacked .logo__text { align-items: center; }
+/* Stacked lockup = the brand logo: wordmark at its own tracking, then the red bold-italic tagline, a third of the
+   wordmark's height, tracked out so it runs almost the wordmark's full width (both centred). */
+.logo--stacked .logo__text { align-items: center; gap: 0; }
+.logo--stacked .logo__word { letter-spacing: .08em; margin-right: -.08em; }
+.logo__tagline {
+  font-family: var(--logo); font-weight: 700; font-style: italic; color: #c32a2e;
+  font-size: calc(var(--logo-size) * .16); letter-spacing: .3em; margin-right: -.3em;
+  margin-top: calc(var(--logo-size) * .17); white-space: nowrap;
+}
+.logo--light .logo__tagline { color: var(--white); }
 
 /* ---------- Promo bar (32px) ---------- */
 .promo { height: var(--promo-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 var(--gutter); background: var(--bg); position: relative; z-index: 101; }

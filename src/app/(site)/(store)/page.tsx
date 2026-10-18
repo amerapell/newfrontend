@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { HeroPanel, type HeroPanelData } from "@/components/home/HeroPanel";
 import { realImage } from "@/components/ui/Photo";
-import { ServiceCards, StoryPanel } from "@/components/home/HomeSections";
+import { HomeIntro, ServiceCards, StoryPanel } from "@/components/home/HomeSections";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
-import { catalogApi, safe } from "@/lib/api";
+import { catalogApi, contentApi, safe } from "@/lib/api";
 import { SITE_URL } from "@/lib/env";
 import { homePanels } from "@/lib/nav";
 import { getCollections, getSettings } from "@/lib/server-data";
@@ -12,8 +12,8 @@ import type { Collection } from "@/lib/types";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: { absolute: "Amerapelle — Quiet luxury, cut in Lagos" },
-  description: "Lagos luxury fashion — tailoring, leather and silk in limited runs. Delivered across Nigeria; exchange, never a refund.",
+  title: { absolute: "Amerapelle — A World of Style. A Signature of Luxury." },
+  description: "Amerapelle is a Lagos-based luxury multi-brand fashion house: fashion, statement handbags, footwear and accessories. Delivered across Nigeria.",
   alternates: { canonical: SITE_URL },
 };
 
@@ -22,7 +22,7 @@ function toPanel(c: Collection): HeroPanelData {
 }
 
 export default async function HomePage() {
-  const [settings, collections] = await Promise.all([getSettings(), getCollections()]);
+  const [settings, collections, intro] = await Promise.all([getSettings(), getCollections(), safe(contentApi.page("home"), null)]);
   // Only panels with a photo are shown — a collection without one stays off the home page until the admin adds it.
   const panels = homePanels(collections, null)
     .map((c) => toPanel(c))
@@ -37,10 +37,11 @@ export default async function HomePage() {
 
   return (
     <div className="home">
-      <h1 className="sr-only">Amerapelle — quiet luxury, cut in Lagos</h1>
+      <h1 className="sr-only">Amerapelle — a world of style, a signature of luxury</h1>
       {first && <HeroPanel panel={first} priority />}
+      <HomeIntro page={intro} />
       {second && <HeroPanel panel={second} />}
-      <ProductCarousel title="New In" subtitle="This week's new pieces, cut in Lagos." products={fallback} className="home__newin" />
+      <ProductCarousel title="New In" subtitle="The latest arrivals." products={fallback} className="home__newin" />
       {rest.map((p) => (
         <HeroPanel key={p.key} panel={p} />
       ))}

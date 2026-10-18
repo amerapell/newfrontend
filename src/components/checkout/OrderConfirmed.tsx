@@ -98,7 +98,7 @@ export function CheckoutComplete({ reference, zones }: { reference: string | nul
                 reached={pending ? 0 : 1}
                 steps={[
                   { label: "Paid", desc: "Payment confirmed" },
-                  { label: "Packing", desc: "Wrapped in Lagos" },
+                  { label: "Packing", desc: "Wrapped with care" },
                   { label: pickup ? "Ready" : "Dispatched", desc: pickup ? "Collect from the store" : "Rider on the way" },
                   { label: pickup ? "Collected" : "Delivered", desc: pickup ? "Same day" : eta ? `Arrives ${eta}` : "Enjoy it" },
                 ]}

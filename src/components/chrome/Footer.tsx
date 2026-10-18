@@ -32,7 +32,7 @@ function Newsletter() {
   return (
     <form className="footer__news" onSubmit={submit} noValidate>
       <label htmlFor="news" className="footer__news-title">Amerapelle News</label>
-      <p className="t-small">Be the first to know about new drops and private sales.</p>
+      <p className="t-small">Be the first to know about new arrivals and private sales.</p>
       <div className="line-field line-field--light">
         <input id="news" type="email" autoComplete="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} aria-describedby="news-note" />
         <button type="submit" disabled={state === "busy"}>Sign up</button>
@@ -59,7 +59,7 @@ export function Footer() {
   return (
     <footer className="footer on-dark">
       <div className="footer__top">
-        <p className="footer__tagline">Quiet luxury, cut in Lagos.</p>
+        <p className="footer__tagline">A world of style. A signature of luxury.</p>
         <div className="footer__side">
           <Newsletter />
           <ul className="footer__social" aria-label="Social">
