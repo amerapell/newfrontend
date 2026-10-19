@@ -196,3 +196,11 @@
 .welcome__form .line-field input::placeholder { color: var(--grey); }
 .welcome__done { font-size: 17px; }
 .welcome__err { color: var(--red, #b3261e); }
+/* Packshot sitting on the stage (image scale < 100): smaller, centred, and its white ground multiplied into the stage
+   colour so it reads as one surface (Berluti-style). Worn shots (scale 100) still fill the frame edge to edge. */
+.img-fill--inset { background: transparent; }
+.img-fill__inner { position: absolute; display: block; }
+.img-fill--inset img { mix-blend-mode: multiply; }
+/* multiply needs the stage colour behind it inside the same stacking context (sticky stage, fading slides) */
+.stage__main:has(.img-fill--inset), .mgallery__slide:has(.img-fill--inset) { background: var(--stage); }
+.img-fill--inset img { filter: brightness(1.03); }

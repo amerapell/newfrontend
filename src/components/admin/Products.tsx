@@ -135,7 +135,7 @@ function toInput(p: AdminProduct): AdminProductInput {
     sizes: p.options.sizes,
     basePriceKobo: p.basePriceKobo,
     compareAtKobo: p.compareAtKobo,
-    images: (p.imagesDetailed ?? p.images).map((i) => ({ url: i.url, alt: i.alt, colour: "colour" in i ? i.colour : null })),
+    images: (p.imagesDetailed ?? p.images).map((i) => ({ url: i.url, alt: i.alt, colour: "colour" in i ? i.colour : null, scale: i.scale ?? 100 })),
   };
 }
 
@@ -323,14 +323,26 @@ export function ProductEditor({ id }: { id?: string }) {
             {form.images.map((img, i) => (
               <div key={img.url + i} className="img-grid__item">
                 <span className="img-grid__slot">{IMAGE_SLOTS[i] ?? `Detail ${i - 1}`}</span>
-                <div className="img-grid__thumb">
+                <div className="img-grid__thumb img-grid__thumb--stage">
                   {img.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img.url} alt={img.alt} />
+                    <img src={img.url} alt={img.alt} style={(img.scale ?? 100) < 100 ? { width: `${img.scale}%`, height: `${img.scale}%`, objectFit: "contain", mixBlendMode: "multiply" } : undefined} />
                   ) : (
                     <span className="mono-xs admin-noimg">No file</span>
                   )}
                 </div>
+                <label className="img-grid__scale">
+                  <span className="mono-xs">Size in frame · {img.scale ?? 100}%{(img.scale ?? 100) === 100 ? " (fills)" : ""}</span>
+                  <input
+                    type="range"
+                    min={50}
+                    max={100}
+                    step={2}
+                    value={img.scale ?? 100}
+                    onChange={(e) => set("images", form.images.map((x, k) => (k === i ? { ...x, scale: Number(e.target.value) } : x)))}
+                    aria-label="Size of the photo in its frame"
+                  />
+                </label>
                 <input className="admin-input" aria-label="Alt text" value={img.alt} onChange={(e) => set("images", form.images.map((x, k) => (k === i ? { ...x, alt: e.target.value } : x)))} placeholder="Alt text (e.g. Back)" />
                 <select className="admin-input" aria-label="Colour" value={img.colour ?? ""} onChange={(e) => set("images", form.images.map((x, k) => (k === i ? { ...x, colour: e.target.value || null } : x)))}>
                   <option value="">All colours</option>

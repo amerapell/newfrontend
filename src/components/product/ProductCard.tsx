@@ -97,8 +97,8 @@ export function ProductCard({
     <article className={`pcard pcard--${variant} ${className}`}>
       <Link href={href} className="pcard__link">
         <span className="pcard__media">
-          <ProductImage src={main?.url} alt={main?.alt || p.name} kind={kind} priority={priority} sizes={imgSizes} className="pcard__img" />
-          {!featured && second?.url && <ProductImage src={second.url} alt="" kind={kind} sizes={imgSizes} className="pcard__img pcard__img--alt" />}
+          <ProductImage src={main?.url} alt={main?.alt || p.name} kind={kind} priority={priority} sizes={imgSizes} scale={main?.scale} className="pcard__img" />
+          {!featured && second?.url && <ProductImage src={second.url} alt="" kind={kind} sizes={imgSizes} scale={second.scale} className="pcard__img pcard__img--alt" />}
           {label && <span className="pcard__label">{label}</span>}
         </span>
         <span className="pcard__cap">

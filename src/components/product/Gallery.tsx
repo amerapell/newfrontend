@@ -50,7 +50,7 @@ export function Gallery({ name, images, kind, fadeKey }: { name: string; images:
           </ul>
         )}
         <button key={`${fadeKey}-${active}`} type="button" className="stage__main fade-in" onClick={() => setZoom(active)} aria-label={`Zoom: ${img.alt || name}`}>
-          <ProductImage src={img.url} alt={img.alt || name} kind={kind} fit="contain" priority={active === 0} sizes="(max-width: 1440px) 50vw, 720px" iconSize={120} />
+          <ProductImage src={img.url} alt={img.alt || name} kind={kind} fit="contain" scale={img.scale} priority={active === 0} sizes="(max-width: 1440px) 50vw, 720px" iconSize={120} />
         </button>
       </div>
 
@@ -58,7 +58,7 @@ export function Gallery({ name, images, kind, fadeKey }: { name: string; images:
         <div key={fadeKey} className="mgallery__track fade-in" ref={track} onScroll={onScroll} role="region" aria-label="Product images" tabIndex={0}>
           {list.map((t, i) => (
             <button key={`${t.url}-${i}`} type="button" className="mgallery__slide" onClick={() => setZoom(i)} aria-label={`Zoom image ${i + 1}`}>
-              <ProductImage src={t.url} alt={t.alt || name} kind={kind} fit="contain" priority={i === 0} sizes="100vw" iconSize={96} />
+              <ProductImage src={t.url} alt={t.alt || name} kind={kind} fit="contain" scale={t.scale} priority={i === 0} sizes="100vw" iconSize={96} />
             </button>
           ))}
         </div>

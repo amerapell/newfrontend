@@ -29,6 +29,7 @@ export function ProductImage({
   className = "",
   style,
   fit = "cover",
+  scale,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -40,9 +41,21 @@ export function ProductImage({
   className?: string;
   style?: CSSProperties;
   fit?: "cover" | "contain";
+  /** Below 100: the photo sits that much smaller, centred on the stage, its white ground blended away. */
+  scale?: number;
 }) {
   if (!realImage(src)) return <ImagePlaceholder kind={kind} size={iconSize} className={className} style={style} />;
   src = src!;
+  if (scale && scale < 100) {
+    const gap = `${(100 - scale) / 2}%`;
+    return (
+      <div className={`img-fill img-fill--inset ${className}`} style={style}>
+        <div className="img-fill__inner" style={{ inset: gap }}>
+          <SmartImage src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: "contain" }} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`img-fill ${className}`} style={style}>
       <SmartImage src={src} alt={alt} fill sizes={sizes} priority={priority} style={{ objectFit: fit }} />

@@ -12,7 +12,8 @@ export type Colour = { name: string; hex: string };
 
 export type Badge = "NEW" | "SALE" | "DROP" | "LOW_STOCK" | "SOLD_OUT";
 
-export type ProductImage = { url: string; alt: string };
+/** scale: % of the frame the photo fills (100 / missing = edge to edge; lower = packshot sitting on the stage). */
+export type ProductImage = { url: string; alt: string; scale?: number };
 
 export type ProductCard = {
   id: string;
@@ -333,7 +334,7 @@ export type AdminProductInput = {
   sizes: string[];
   basePriceKobo: Money;
   compareAtKobo?: Money | null;
-  images: { url: string; alt: string; colour?: string | null }[];
+  images: { url: string; alt: string; colour?: string | null; scale?: number }[];
 };
 
 /** GET /admin/products/:id — the public Product shape plus admin fields. */
@@ -344,7 +345,7 @@ export type AdminProduct = Product & {
   collectionIds: string[];
   seoTitle: string | null;
   seoDescription: string | null;
-  imagesDetailed: { id: string; url: string; alt: string; colour: string | null }[];
+  imagesDetailed: { id: string; url: string; alt: string; colour: string | null; scale?: number }[];
 };
 
 export type AdminProductListItem = {

@@ -238,3 +238,7 @@
 .home-photos { padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--hair); display: grid; gap: 12px; }
 .home-photos__title { font-size: var(--fs-product); }
 .home-photos__item { display: grid; gap: 8px; align-content: start; }
+/* Product photo size in its frame (shop cards and product page use the same stage ground) */
+.img-grid__thumb--stage { background: var(--stage); }
+.img-grid__scale { display: grid; gap: 4px; }
+.img-grid__scale input { width: 100%; accent-color: var(--ink); }

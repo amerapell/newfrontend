@@ -46,7 +46,8 @@ export function ProductView({ product: p, zones }: { product: Product; zones: De
 
   const images = useMemo(() => {
     const v = p.variants.find((x) => x.colour === colour && x.imageUrls.length);
-    if (v) return v.imageUrls.map((url, i) => ({ url, alt: i === 0 ? `${p.name} in ${colour}` : `${p.name} — view ${i + 1}` }));
+    const scaleOf = (url: string) => p.images.find((x) => x.url === url)?.scale;
+    if (v) return v.imageUrls.map((url, i) => ({ url, alt: i === 0 ? `${p.name} in ${colour}` : `${p.name} — view ${i + 1}`, scale: scaleOf(url) }));
     return p.images;
   }, [p, colour]);
 
