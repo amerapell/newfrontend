@@ -81,7 +81,28 @@ function CheckoutLogin({ onGuest }: { onGuest: (email: string) => void }) {
   );
 }
 
-export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
+export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZone[]; cancelledRef?: string | null }) {
+  const [cancelNote, setCancelNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!cancelledRef) return;
+    let alive = true;
+    checkoutApi
+      .cancel(cancelledRef)
+      .then(({ order }) => {
+        if (!alive) return;
+        // The provider may have taken the money just before the customer pressed cancel.
+        if (order.status !== "CANCELLED" && order.status !== "PENDING_PAYMENT") {
+          window.location.replace(`/checkout/complete?reference=${encodeURIComponent(cancelledRef)}`);
+          return;
+        }
+        setCancelNote(`Payment cancelled — nothing was charged for order ${order.number}. Your bag is saved, so you can try again.`);
+      })
+      .catch(() => alive && setCancelNote("Payment cancelled. Your bag is saved, so you can try again."));
+    window.history.replaceState(null, "", "/checkout");
+    return () => {
+      alive = false;
+    };
+  }, [cancelledRef]);
   const router = useRouter();
   const { settings } = useSettings();
   const { user, status } = useAuth();
@@ -290,6 +311,7 @@ export function CheckoutView({ zones }: { zones: DeliveryZone[] }) {
 
       <div className="cm-co__main">
         <h1 className="cm-title">Checkout</h1>
+        {cancelNote && <p className="cm-alert" role="status">{cancelNote}</p>}
         {status === "guest" && <CheckoutLogin onGuest={(e) => setEmail((x) => x || e)} />}
         <Section n={1} id="co-contact" title="Contact">
           <div className="cm-fields">
