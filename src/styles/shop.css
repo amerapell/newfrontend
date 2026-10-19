@@ -27,9 +27,9 @@
 .pcard--compact .pcard__cap { padding: 10px 12px 20px; }
 
 /* ---------- Grid ---------- */
-.pgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1px; } /* 1px ivory line between photos, as on Berluti */
 .pgrid__cell { min-width: 0; }
-.pgrid__cell--featured { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 24px 0 48px; }
+.pgrid__cell--featured { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1px; padding: 24px 0 48px; }
 .pgrid__cell--featured .pcard { grid-column: 2 / span 2; }
 .pgrid--stagger > li { animation: fade-up 600ms var(--ease) both; }
 @media (max-width: 1023px) {
@@ -90,11 +90,11 @@
 .carousel__arrows { display: flex; gap: 20px; }
 .carousel__arrows button { height: 32px; display: grid; place-items: center; color: var(--ink); }
 .carousel__arrows button:disabled { color: var(--placeholder); cursor: default; }
-.carousel__track { display: grid; grid-auto-flow: column; grid-auto-columns: 25%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.carousel__track { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 3px) / 4); column-gap: 1px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
 .carousel__track::-webkit-scrollbar { display: none; }
 .carousel__cell { scroll-snap-align: start; min-width: 0; }
 @media (max-width: 1023px) {
   .carousel { padding: 56px 0 24px; }
-  .carousel__track { grid-auto-columns: 50%; }
+  .carousel__track { grid-auto-columns: calc((100% - 1px) / 2); }
   .carousel__arrows { display: none; }
 }
