@@ -180,7 +180,8 @@ export type Order = {
   email: string;
   phone: string;
   items: OrderItem[];
-  delivery: { zone: ZoneCode; name: string; feeKobo: Money; address: Address | null };
+  /** trackingUrl: DHL tracking page for orders abroad. */
+  delivery: { zone: ZoneCode; name: string; feeKobo: Money; address: Address | null; trackingNumber?: string | null; trackingUrl?: string | null };
   subtotalKobo: Money;
   discountKobo: Money;
   creditAppliedKobo: Money;

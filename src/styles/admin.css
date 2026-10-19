@@ -242,3 +242,5 @@
 .img-grid__thumb--stage { background: var(--stage); }
 .img-grid__scale { display: grid; gap: 4px; }
 .img-grid__scale input { width: 100%; accent-color: var(--ink); }
+.order-tracking { display: grid; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hair); }
+.order-tracking .admin-input { flex: 1 1 220px; min-width: 0; }

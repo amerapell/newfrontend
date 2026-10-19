@@ -60,7 +60,7 @@ export const adminApi = {
   customers: (q?: { q?: string; sort?: AdminCustomerSort; page?: number }) => api.get<Paginated<AdminCustomer>>("admin/customers", { ...a, query: q }),
   customer: (email: string) => api.get<AdminCustomerDetail>(`admin/customers/${encodeURIComponent(email)}`, a),
   order: (id: string) => api.get<AdminOrderDetail>(`admin/orders/${id}`, a),
-  updateOrder: (id: string, b: { status?: OrderStatus; note?: string }) => api.patch<AdminOrderDetail>(`admin/orders/${id}`, b, a),
+  updateOrder: (id: string, b: { status?: OrderStatus; note?: string; trackingNumber?: string }) => api.patch<AdminOrderDetail>(`admin/orders/${id}`, b, a),
   packingSlip: (id: string) => api.get<string>(`admin/orders/${id}/packing-slip`, { ...a, text: true }),
 
   exchanges: (status?: string) => api.get<AdminExchange[]>("admin/exchanges", { ...a, query: { status } }),

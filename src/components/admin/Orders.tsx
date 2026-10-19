@@ -9,7 +9,7 @@ import type { AdminOrderDetail, OrderStatus } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
 import { Logo } from "@/components/brand/Logo";
 import { customerHref } from "./Customers";
-import { addressLines } from "@/lib/countries";
+import { addressLines, isInternationalZone } from "@/lib/countries";
 
 const STATUSES = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
 
@@ -83,18 +83,30 @@ export function OrderAdminDetail({ id }: { id: string }) {
   const { onError } = useAdmin();
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [note, setNote] = useState("");
+  const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (o) setStatus(o.status);
+    if (o) {
+      setStatus(o.status);
+      setTracking(o.delivery.trackingNumber ?? "");
+    }
   }, [o]);
   if (error) return <p className="form-error">{error}</p>;
   if (!o) return <p className="mono-label">Loading…</p>;
-  const patch = async (b: { status?: OrderStatus; note?: string }) => {
+  const patch = async (b: { status?: OrderStatus; note?: string; trackingNumber?: string }) => {
     setBusy(true);
     try {
       const u = await adminApi.updateOrder(o.id, b);
       setData(u);
-      toast.show({ message: b.status ? `Status → ${ORDER_STATUS_LABEL[b.status]} · customer emailed` : "Note added." });
+      toast.show({
+        message: b.status
+          ? `Status → ${ORDER_STATUS_LABEL[b.status]} · customer emailed`
+          : b.trackingNumber !== undefined
+            ? u.status === "DISPATCHED" && b.trackingNumber
+              ? "Tracking number saved · customer emailed"
+              : "Tracking number saved"
+            : "Note added.",
+      });
       if (b.note) setNote("");
     } catch (e) {
       onError(e);
@@ -125,10 +137,41 @@ export function OrderAdminDetail({ id }: { id: string }) {
             </select>
             <button className="btn btn--short" disabled={busy || status === o.status || !status} onClick={() => {
                 if (status === "CANCELLED" && o.status !== "PENDING_PAYMENT" && !confirm(`Cancel ${o.number}? The customer gets ${naira(o.amountDueKobo + o.creditAppliedKobo)} as store credit to choose another piece (no cash refunds), and an email.`)) return;
-                void patch({ status: status as OrderStatus });
+                // A tracking number typed but not saved yet goes with the status change, so the email carries it.
+                const t = tracking.trim();
+                void patch({ status: status as OrderStatus, ...(t !== (o.delivery.trackingNumber ?? "") ? { trackingNumber: t } : {}) });
               }}>Update status</button>
           </div>
           <p className="mono-xs">Every status change emails the customer; the store gets a copy.</p>
+          {o.delivery.zone !== "PICKUP" && (
+            <div className="order-tracking">
+              <div className="row gap-12 wrap">
+                <input
+                  className="admin-input"
+                  value={tracking}
+                  onChange={(e) => setTracking(e.target.value)}
+                  placeholder={isInternationalZone(o.delivery.zone) ? "DHL waybill number" : "Tracking number (optional)"}
+                  aria-label="Tracking number"
+                  maxLength={60}
+                />
+                <button
+                  className="btn btn--short btn--ghost"
+                  disabled={busy || tracking.trim() === (o.delivery.trackingNumber ?? "")}
+                  onClick={() => void patch({ trackingNumber: tracking.trim() })}
+                >
+                  Save tracking
+                </button>
+              </div>
+              <p className="mono-xs">
+                {isInternationalZone(o.delivery.zone)
+                  ? "Add the DHL waybill number before (or when) you mark the order Dispatched — the customer gets it in the “on its way” email with a DHL tracking link."
+                  : "Optional. Shown to the customer in the “on its way” email and on their order page."}
+                {o.delivery.trackingUrl && (
+                  <> <a href={o.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" className="ap-link">Open on DHL ↗</a></>
+                )}
+              </p>
+            </div>
+          )}
           <dl className="order-meta">
             <div><dt className="mono-xs">Payment</dt><dd>{o.payment?.provider ?? "—"} · {o.payment?.status ?? "—"}{o.payment?.reference ? ` · ${o.payment.reference}` : ""}</dd></div>
             {o.discountCode && <div><dt className="mono-xs">Promo</dt><dd className="mono">{o.discountCode}</dd></div>}

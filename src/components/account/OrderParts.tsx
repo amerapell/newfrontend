@@ -92,6 +92,20 @@ export function OrderMeta({ order }: { order: Order }) {
           )}
         </dd>
       </div>
+      {order.delivery.trackingNumber && (
+        <div>
+          <dt>Tracking</dt>
+          <dd>
+            <span className="tnum">{order.delivery.trackingNumber}</span>
+            {order.delivery.trackingUrl && (
+              <>
+                <br />
+                <a href={order.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" className="u-link">Track your parcel on DHL</a>
+              </>
+            )}
+          </dd>
+        </div>
+      )}
     </dl>
   );
 }
