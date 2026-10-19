@@ -109,7 +109,6 @@ export function ProductTabs({ product: p, zones }: { product: Product; zones: De
         <div className="ptabs__main">{panels[tab].body}</div>
         <table className="spec-table">
           <tbody>
-            <tr><th scope="row">Origin</th><td>Made in Lagos</td></tr>
             {collection && <tr><th scope="row">Collection</th><td><Link href={`/c/${collection.slug}`}>{collection.name}</Link></td></tr>}
             {p.material && <tr><th scope="row">Material</th><td>{fabricOf(p.material)}</td></tr>}
             <tr><th scope="row">Reference</th><td>No. {ref}</td></tr>
