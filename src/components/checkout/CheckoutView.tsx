@@ -421,7 +421,7 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
           </button>
           {creditOnly && <p className="cm-small cm-soft">Your exchange credit covers this order — no payment needed.</p>}
           <p className="cm-small cm-soft">
-            Exchange within {settings.exchangeWindowDays} days, no refunds. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
+            Exchange within {settings.exchangeWindowDays} days for store credit. <Link href="/policies/exchanges" className="u-link">Our Exchange Promise</Link>
           </p>
         </Section>
       </div>

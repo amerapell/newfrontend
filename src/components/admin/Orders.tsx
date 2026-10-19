@@ -229,7 +229,7 @@ export function PackingSlip({ id }: { id: string }) {
           <ul className="notes">{o.notes.map((n) => <li key={n.id}>{n.body}</li>)}</ul>
         </div>
       )}
-      <p className="mono-xs slip__foot">Exchange, not refund · unworn with tags within the exchange window · Amerapelle, Lagos</p>
+      <p className="mono-xs slip__foot">Our Exchange Promise · unworn with tags within the exchange window · Amerapelle, Lagos</p>
       <button className="btn btn--short slip__print" onClick={() => window.print()}>Print</button>
     </div>
   );

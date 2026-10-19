@@ -7,7 +7,7 @@ import { SITE_URL } from "@/lib/env";
 import { slugify } from "@/lib/format";
 
 export const revalidate = 300;
-export const metadata: Metadata = { title: "FAQ", description: "Orders, delivery, payments, exchanges (no refunds), sizing and authenticity.", alternates: { canonical: `${SITE_URL}/faq` } };
+export const metadata: Metadata = { title: "FAQ", description: "Orders, delivery, payments, exchanges, sizing and authenticity.", alternates: { canonical: `${SITE_URL}/faq` } };
 
 export default async function FaqPage() {
   const groups = await safe(contentApi.faq(), []);
@@ -17,7 +17,7 @@ export default async function FaqPage() {
     mainEntity: groups.flatMap((g) => g.items.map((i) => ({ "@type": "Question", name: i.question, acceptedAnswer: { "@type": "Answer", text: i.answer } }))),
   };
   return (
-    <ContentPage title="Frequently asked questions" lede={<>Exchange, never a refund — every unworn piece can become credit. Still need help? <Link href="/contact" className="u-link">Contact us</Link>.</>}>
+    <ContentPage title="Frequently asked questions" lede={<>Your satisfaction, our priority — every unworn piece can be exchanged for store credit. Still need help? <Link href="/contact" className="u-link">Contact us</Link>.</>}>
       {groups.map((g) => (
         <section key={g.group} id={slugify(g.group)} className="faq-group" aria-labelledby={`${slugify(g.group)}-h`}>
           <h2 id={`${slugify(g.group)}-h`} className="t-title">{g.group}</h2>

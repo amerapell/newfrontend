@@ -162,7 +162,7 @@ export function BagView({ alsoLike = [] }: { alsoLike?: ProductCard[] }) {
                 Checkout
               </Link>
               <p className="cm-small cm-soft">
-                Exchange only — no refunds. <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
+                Unworn pieces can be exchanged for store credit. <Link href="/policies/exchanges" className="u-link">Our Exchange Promise</Link>
               </p>
               {status === "guest" && (
                 <p className="cm-small cm-soft">

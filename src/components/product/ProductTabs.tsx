@@ -86,7 +86,7 @@ export function ProductTabs({ product: p, zones }: { product: Product; zones: De
           <Block title="Exchanges">
             <p>
               {p.exchangeable
-                ? `Exchange only — no refunds. Unworn pieces with their tags can be exchanged for store credit within ${settings.exchangeWindowDays} days of delivery. `
+                ? `Unworn pieces with their tags can be exchanged for store credit within ${settings.exchangeWindowDays} days of delivery. `
                 : "This piece is final sale and can't be exchanged. "}
               <Link href="/policies/exchanges" className="u-link">Exchange policy</Link>
             </p>

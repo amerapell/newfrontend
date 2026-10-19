@@ -13,7 +13,7 @@ export default async function ContactPage() {
   const map = s.pickupAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.pickupAddress)}` : null;
   const ig = s.instagramUrl ? "@" + s.instagramUrl.replace(/\/$/, "").split("/").pop() : null;
   return (
-    <ContentPage title="Contact us" lede="A stylist answers on WhatsApp, usually within minutes during opening hours.">
+    <ContentPage title="Our Customer Experience Team Is Here to Help" lede="A stylist answers on WhatsApp, usually within minutes during opening hours.">
       <dl className="details-list">
         <div>
           <dt>WhatsApp</dt>

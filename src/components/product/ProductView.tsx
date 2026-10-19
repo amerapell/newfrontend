@@ -211,7 +211,7 @@ export function ProductView({ product: p, zones }: { product: Product; zones: De
           </div>
           <p className="t-small t-grey">
             {p.exchangeable
-              ? `Exchange only — no refunds. Unworn pieces can be exchanged for credit within ${settings.exchangeWindowDays} days.`
+              ? `Unworn pieces can be exchanged for credit within ${settings.exchangeWindowDays} days.`
               : "Final sale — this piece can't be exchanged or refunded."}
           </p>
         </aside>

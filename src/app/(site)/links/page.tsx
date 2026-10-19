@@ -70,7 +70,7 @@ export default async function LinksPage() {
         ))}
         <a href={whatsappLink(s.whatsappNumber, "Hi Amerapelle, ")} target="_blank" rel="noopener noreferrer">Ask a stylist on WhatsApp</a>
       </nav>
-      <p className="t-small t-grey links__foot">Delivery across Nigeria · Exchange, never a refund</p>
+      <p className="t-small t-grey links__foot">Delivery across Nigeria · Your satisfaction, our priority</p>
     </main>
   );
 }

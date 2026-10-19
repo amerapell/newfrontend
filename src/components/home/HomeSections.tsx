@@ -47,7 +47,7 @@ export function ServiceCards({ settings }: { settings: StoreSettings }) {
   const cards = [
     { title: "Style advice on WhatsApp", text: "Fit, sizing and styling, answered fast by our team.", link: "Message a stylist", href: whatsappLink(settings.whatsappNumber, "Hi Amerapelle, I'd like some style advice."), icon: <WhatsAppIcon width={28} height={28} />, external: true, image: realImage(settings.serviceImages?.stylist) },
     { title: "Visit the store", text: "Try pieces on at our Lagos store, Monday to Saturday.", link: "Get directions", href: map, icon: <BagIcon width={28} height={28} />, external: !!settings.pickupAddress, image: realImage(settings.serviceImages?.store) },
-    { title: "Exchange, never a refund", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false, image: realImage(settings.serviceImages?.exchange) },
+    { title: "Your Satisfaction, Our Priority", text: "Unworn pieces can be exchanged for store credit within 7 days.", link: "How exchanges work", href: "/policies/exchanges", icon: <ExchangeIcon />, external: false, image: realImage(settings.serviceImages?.exchange) },
   ];
   return (
     <section className="service container" aria-labelledby="service-title">

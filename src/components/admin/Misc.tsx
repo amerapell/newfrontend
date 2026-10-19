@@ -528,7 +528,7 @@ export function SettingsAdmin() {
             {([
               ["stylist", "Style advice on WhatsApp"],
               ["store", "Visit the store"],
-              ["exchange", "Exchange, never a refund"],
+              ["exchange", "Your Satisfaction, Our Priority"],
             ] as const).map(([key, title]) => (
               <ImageField
                 key={key}
