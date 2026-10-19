@@ -112,6 +112,8 @@ export interface CutoutUpload {
   url: string;
   /** The untouched photo, when `keepOriginal` was asked for. */
   originalUrl: string | null;
+  /** False when the server couldn't remove the background and stored the photo as given instead. */
+  backgroundRemoved: boolean;
 }
 
 /**
@@ -125,8 +127,8 @@ export async function uploadCutout(file: File, opts: { layout?: "portrait" | "la
   fd.append("removeBackground", "true");
   fd.append("layout", opts.layout ?? "portrait");
   if (opts.keepOriginal) fd.append("keepOriginal", "true");
-  const res = await api.post<{ url: string; originalUrl?: string | null }>("admin/uploads/image", fd, { ...a, direct: true, signal: AbortSignal.timeout(90_000) });
-  return { url: res.url, originalUrl: res.originalUrl ?? null };
+  const res = await api.post<{ url: string; originalUrl?: string | null; backgroundRemoved?: boolean }>("admin/uploads/image", fd, { ...a, direct: true, signal: AbortSignal.timeout(90_000) });
+  return { url: res.url, originalUrl: res.originalUrl ?? null, backgroundRemoved: res.backgroundRemoved !== false };
 }
 
 /**

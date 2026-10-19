@@ -156,7 +156,7 @@ export function ProductEditor({ id }: { id?: string }) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(0);
   const [canCutout, setCanCutout] = useState(false);
-  const [cutout, setCutout] = useState(true);
+  const [cutout, setCutout] = useState(false);
   const [keepOriginal, setKeepOriginal] = useState(true);
   useEffect(() => {
     let live = true;
@@ -216,6 +216,7 @@ export function ProductEditor({ id }: { id?: string }) {
           const r = await uploadCutout(f, { layout: "portrait", keepOriginal });
           setForm((x) => ({ ...x!, images: [...x!.images, { url: r.url, alt: x!.name || alt, colour: null }].slice(0, 8) }));
           if (r.originalUrl) originals.push({ url: r.originalUrl, alt });
+          if (!r.backgroundRemoved) toast.show({ message: `Couldn't remove the background from ${f.name} — uploaded the photo as it is.`, tone: "error" });
         } else {
           const url = await uploadImage(f);
           setForm((x) => ({ ...x!, images: [...x!.images, { url, alt: x!.name || alt, colour: null }].slice(0, 8) }));
