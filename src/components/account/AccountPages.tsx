@@ -17,6 +17,7 @@ import { useAccount } from "./AccountShell";
 import { CreditLocked } from "./EmailVerification";
 import { EXCHANGEABLE_STATUSES } from "./ExchangeRequest";
 import { OrderItems, OrderMeta, OrderTotals, Progress } from "./OrderParts";
+import { addressLines } from "@/lib/countries";
 
 export function canExchange(o: Order) {
   return EXCHANGEABLE_STATUSES.includes(o.status) && !!o.exchangeableUntil && new Date(o.exchangeableUntil).getTime() > Date.now() && o.items.some((i) => i.exchangeable);
@@ -288,14 +289,15 @@ export function AddressesPage() {
           {list.map((a) => (
             <li key={a.id} className="cm-address">
               <p>{a.fullName}</p>
-              <p>{a.street}, {a.area}</p>
-              <p>{a.lga}, {a.state}</p>
-              <p className="cm-soft">Near {a.landmark}</p>
+              {addressLines(a).map((l) => <p key={l}>{l}</p>)}
+              {a.landmark && <p className="cm-soft">Near {a.landmark}</p>}
               <p className="cm-soft">{localPhoneDisplay(a.phone) ? `+234 ${localPhoneDisplay(a.phone)}` : a.phone}</p>
               <div className="cm-links">
-                <button type="button" className="cm-textbtn cm-textbtn--ink" onClick={() => setEditing(a.id!)}>
-                  Edit<span className="sr-only"> address for {a.fullName}, {a.street}</span>
-                </button>
+                {(a.country || "NG") === "NG" && (
+                  <button type="button" className="cm-textbtn cm-textbtn--ink" onClick={() => setEditing(a.id!)}>
+                    Edit<span className="sr-only"> address for {a.fullName}, {a.street}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="cm-textbtn cm-textbtn--ink"

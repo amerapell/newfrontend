@@ -9,6 +9,7 @@ import type { AdminOrderDetail, OrderStatus } from "@/lib/types";
 import { AdminHead, useAdmin, useAsync } from "./AdminShell";
 import { Logo } from "@/components/brand/Logo";
 import { customerHref } from "./Customers";
+import { addressLines } from "@/lib/countries";
 
 const STATUSES = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
 
@@ -138,7 +139,7 @@ export function OrderAdminDetail({ id }: { id: string }) {
               <dd>
                 {a ? (
                   <>
-                    {a.fullName}<br />{a.street}, {a.area}<br />{a.lga}, {a.state}<br /><span className="muted">Landmark: {a.landmark}</span>
+                    {a.fullName}{addressLines(a).map((l) => <span key={l}><br />{l}</span>)}{a.landmark && <><br /><span className="muted">Landmark: {a.landmark}</span></>}
                     {a.note && <><br /><span className="muted">Note: {a.note}</span></>}
                   </>
                 ) : "Pickup from store"}
@@ -204,7 +205,7 @@ export function PackingSlip({ id }: { id: string }) {
         <div>
           <div className="mono-xs">Ship to</div>
           {a ? (
-            <p>{a.fullName}<br />{a.street}<br />{a.area}, {a.lga}<br />{a.state}<br />Landmark: {a.landmark}<br />{a.phone || o.phone}</p>
+            <p>{a.fullName}{addressLines(a).map((l) => <span key={l}><br />{l}</span>)}{a.landmark && <><br />Landmark: {a.landmark}</>}<br />{a.phone || o.phone}</p>
           ) : (
             <p>Pickup from store<br />{o.email}<br />{o.phone}</p>
           )}

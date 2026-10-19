@@ -6,6 +6,7 @@ import { adminApi } from "@/lib/api";
 import { ORDER_STATUS_LABEL, creditReasonLabel, longDate, naira } from "@/lib/format";
 import type { AdminCustomerSort } from "@/lib/types";
 import { AdminHead, useAsync } from "./AdminShell";
+import { addressLines } from "@/lib/countries";
 
 const SORTS: { key: AdminCustomerSort; label: string }[] = [
   { key: "recent", label: "Most recent" },
@@ -132,7 +133,7 @@ export function CustomerAdminDetail({ email }: { email: string }) {
               {c.addresses.map((a) => (
                 <li key={a.id}>
                   {a.fullName} · {a.phone}
-                  <div className="mono-xs">{[a.street, a.area, a.lga, a.state].filter(Boolean).join(", ")}{a.landmark ? ` · ${a.landmark}` : ""}</div>
+                  <div className="mono-xs">{addressLines(a).join(", ")}{a.landmark ? ` · ${a.landmark}` : ""}</div>
                 </li>
               ))}
             </ul>

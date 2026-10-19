@@ -128,7 +128,8 @@ export type Cart = {
   freeDeliveryThresholdKobo: Money | null;
 };
 
-export type ZoneCode = "LAGOS_ISLAND" | "LAGOS_MAINLAND" | "LEKKI_AJAH" | "OTHER_STATES" | "PICKUP";
+/** Nigerian zones, store pickup, and DHL Express regions for delivery abroad (INTL_*). */
+export type ZoneCode = "LAGOS_ISLAND" | "LAGOS_MAINLAND" | "LEKKI_AJAH" | "OTHER_STATES" | "PICKUP" | "INTL_AFRICA" | "INTL_EUROPE" | "INTL_AMERICAS" | "INTL_WORLD";
 
 export type DeliveryZone = { id: string; code: ZoneCode; name: string; etaText: string; feeKobo: Money; active: boolean };
 
@@ -142,6 +143,9 @@ export type Address = {
   street: string;
   landmark: string;
   note?: string | null;
+  /** ISO 3166-1 alpha-2; missing/"NG" = Nigeria. Abroad: state = state/region, lga = town/city, area = district. */
+  country?: string;
+  postcode?: string;
 };
 
 export type OrderStatus =

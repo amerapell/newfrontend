@@ -11,7 +11,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
 import { accountApi, checkoutApi } from "@/lib/api";
-import { apiMessage, arrivalFromEta, localPhoneDisplay, naira, toE164NG } from "@/lib/format";
+import { DELIVERY_COUNTRIES, countryName, isInternationalZone, zoneForCountry } from "@/lib/countries";
+import { apiMessage, arrivalFromEta, localPhoneDisplay, naira, toE164Intl, toE164NG } from "@/lib/format";
 import { useNgStates } from "@/lib/useNgStates";
 import { iconKind } from "@/lib/product";
 import type { Address, CheckoutQuote, DeliveryZone, PaymentProviderCode, ZoneCode } from "@/lib/types";
@@ -21,7 +22,7 @@ const PROVIDERS: { code: PaymentProviderCode; name: string; desc: string }[] = [
   { code: "BACHS", name: "Bachs", desc: "International cards, transfer, USDT/USDC" },
 ];
 
-type Errors = Partial<Record<"email" | "phone" | "fullName" | "state" | "lga" | "area" | "street" | "landmark" | "provider" | "zone", string>>;
+type Errors = Partial<Record<"email" | "phone" | "fullName" | "state" | "lga" | "area" | "street" | "landmark" | "provider" | "zone" | "country", string>>;
 
 const emptyAddress: Address = { fullName: "", phone: "", state: "Lagos", lga: "", area: "", street: "", landmark: "", note: "" };
 
@@ -114,6 +115,9 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
   const [phone, setPhone] = useState("");
   const [zone, setZone] = useState<ZoneCode | null>(null);
   const [addr, setAddr] = useState<Address>(emptyAddress);
+  /** Where the order goes: Nigeria (local zones + pickup) or a country abroad (its DHL Express region). */
+  const [country, setCountry] = useState("NG");
+  const abroad = country !== "NG";
   const [saved, setSaved] = useState<Address[]>([]);
   const [savedId, setSavedId] = useState<string | "new">("new");
   const [saveAddress, setSaveAddress] = useState(true);
@@ -126,11 +130,24 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
   const [summaryOpen, setSummaryOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // default zone: Lekki–Ajah if present, else first
+  // Zones offered for the chosen country: Nigeria → local zones + pickup; abroad → that country's DHL region.
+  const intlZone = abroad ? zoneForCountry(country) : null;
+  const shownZones = useMemo(
+    () => (abroad ? zones.filter((z) => z.code === intlZone) : zones.filter((z) => !isInternationalZone(z.code))),
+    [zones, abroad, intlZone],
+  );
+  // default zone: Lekki–Ajah if present, else first of the options for this country
   useEffect(() => {
-    if (zone || !zones.length) return;
-    setZone((zones.find((z) => z.code === "LEKKI_AJAH") ?? zones[0]).code);
-  }, [zones, zone]);
+    if (zone && shownZones.some((z) => z.code === zone)) return;
+    const next = shownZones.find((z) => z.code === "LEKKI_AJAH") ?? shownZones[0];
+    setZone(next ? next.code : null);
+  }, [shownZones, zone]);
+  const chooseCountry = (code: string) => {
+    setCountry(code);
+    setSavedId("new");
+    setAddr((a) => ({ ...emptyAddress, fullName: a.fullName, state: code === "NG" ? "Lagos" : "", country: code }));
+    setErrors({});
+  };
 
   // prefill for signed-in customers + saved addresses (CHK-3)
   useEffect(() => {
@@ -144,6 +161,7 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
         if (list[0]?.id) {
           setSavedId(list[0].id);
           setAddr({ ...emptyAddress, ...list[0] });
+          setCountry(list[0].country || "NG");
         }
       })
       .catch(() => {});
@@ -169,8 +187,9 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
 
   const ng = useNgStates();
   const lgas = useMemo(() => ng.lgasFor(addr.state), [ng, addr.state]);
+  const savedHere = saved.filter((a) => (a.country || "NG") === country);
   const set = (k: keyof Address, v: string) => {
-    setAddr((a) => ({ ...a, [k]: v, ...(k === "state" ? { lga: "" } : {}) }));
+    setAddr((a) => ({ ...a, [k]: v, ...(k === "state" && !abroad ? { lga: "" } : {}) }));
     setSavedId("new");
     setErrors((e) => ({ ...e, [k]: undefined }));
   };
@@ -178,9 +197,13 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
   const validate = (): Errors => {
     const e: Errors = {};
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) e.email = "Enter a valid email address.";
-    if (!toE164NG(phone)) e.phone = "Enter a Nigerian number, e.g. 0803 000 0000 or +234 803 000 0000.";
-    if (!zone) e.zone = "Choose a delivery method.";
-    if (!pickup) {
+    if (abroad ? !toE164Intl(phone) : !toE164NG(phone)) e.phone = abroad ? "Enter your number with its country code, e.g. +44 7700 900123." : "Enter a Nigerian number, e.g. 0803 000 0000 or +234 803 000 0000.";
+    if (!zone) e.zone = abroad ? `We can't deliver to ${countryName(country)} online yet — message us on WhatsApp.` : "Choose a delivery method.";
+    if (abroad) {
+      if (!addr.fullName.trim()) e.fullName = "Enter the recipient's full name.";
+      if (!addr.street.trim()) e.street = "Enter the street address.";
+      if (!addr.lga.trim()) e.lga = "Enter the town or city.";
+    } else if (!pickup) {
       if (!addr.fullName.trim()) e.fullName = "Enter the recipient's full name.";
       if (!addr.state) e.state = "Choose a state.";
       if (!addr.lga) e.lga = "Choose an LGA.";
@@ -220,10 +243,11 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
     }
     setSubmitting(true);
     try {
-      const e164 = toE164NG(phone)!;
+      const toE164 = abroad ? toE164Intl : toE164NG;
+      const e164 = toE164(phone)!;
       const address: Address | null = pickup
         ? null
-        : { ...addr, phone: toE164NG(addr.phone || phone) ?? e164, note: addr.note?.trim() || null, id: savedId !== "new" ? savedId : undefined };
+        : { ...addr, country, phone: toE164(addr.phone || phone) ?? e164, note: addr.note?.trim() || null, id: savedId !== "new" ? savedId : undefined };
       const res = await checkoutApi.create({
         email: email.trim(),
         phone: e164,
@@ -316,7 +340,7 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
         <Section n={1} id="co-contact" title="Contact">
           <div className="cm-fields">
             <FieldBox label="Email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: undefined })); }} error={errors.email} required />
-            <FieldBox label="Phone (+234)" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="803 000 0000" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((x) => ({ ...x, phone: undefined })); }} error={errors.phone} required />
+            <FieldBox label={abroad ? "Phone (with country code)" : "Phone (+234)"} type="tel" autoComplete={abroad ? "tel" : "tel-national"} inputMode="tel" placeholder={abroad ? "+44 7700 900123" : "803 000 0000"} value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((x) => ({ ...x, phone: undefined })); }} error={errors.phone} required />
           </div>
           <Check id="consent" checked={consent} onChange={setConsent}>
             Email me about new pieces
@@ -324,8 +348,14 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
         </Section>
 
         <Section n={2} id="co-delivery" title="Delivery">
+          <SelectBox full label="Deliver to" autoComplete="country" value={country} onChange={(e) => chooseCountry(e.target.value)} hint={abroad ? "Delivered by DHL Express. Any import duties are paid to DHL on delivery." : undefined}>
+            <option value="NG">Nigeria</option>
+            {DELIVERY_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.name}</option>
+            ))}
+          </SelectBox>
           <div role="radiogroup" aria-labelledby="co-delivery" aria-invalid={!!errors.zone} aria-describedby={errors.zone ? "co-zone-err" : undefined} className="cm-radios">
-            {zones.map((z) => (
+            {shownZones.map((z) => (
               <RadioRow
                 key={z.id}
                 name="zone"
@@ -345,26 +375,40 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
           </div>
           {errors.zone && <span id="co-zone-err" className="cm-error" role="alert">{errors.zone}</span>}
           {!zones.length && <p className="cm-error">Delivery options are unavailable right now. Please refresh.</p>}
+          {zones.length > 0 && !shownZones.length && (
+            <p className="cm-error">We can&apos;t deliver to {countryName(country)} online yet. Message us on WhatsApp and we&apos;ll arrange it.</p>
+          )}
 
           {!pickup && (
             <div className="cm-co__address">
               <h3 className="cm-co__h3" id="co-address">Delivery address</h3>
-              {saved.length > 0 && (
+              {savedHere.length > 0 && (
                 <div role="radiogroup" aria-label="Saved addresses" className="cm-radios">
-                  {saved.map((a) => (
+                  {savedHere.map((a) => (
                     <RadioRow
                       key={a.id}
                       name="saved-address"
                       value={a.id!}
                       checked={savedId === a.id}
                       onChange={() => { setSavedId(a.id!); setAddr({ ...emptyAddress, ...a }); setErrors({}); }}
-                      title={`${a.fullName} — ${a.street}, ${a.area}`}
-                      meta={`${a.lga}, ${a.state}`}
+                      title={`${a.fullName} — ${a.street}${a.area ? `, ${a.area}` : ""}`}
+                      meta={abroad ? [a.lga, a.postcode, countryName(a.country)].filter(Boolean).join(", ") : `${a.lga}, ${a.state}`}
                     />
                   ))}
-                  <RadioRow name="saved-address" value="new" checked={savedId === "new"} onChange={() => { setSavedId("new"); setAddr({ ...emptyAddress, fullName: addr.fullName }); }} title="Use a new address" />
+                  <RadioRow name="saved-address" value="new" checked={savedId === "new"} onChange={() => { setSavedId("new"); setAddr({ ...emptyAddress, fullName: addr.fullName, state: abroad ? "" : "Lagos", country }); }} title="Use a new address" />
                 </div>
               )}
+              {abroad ? (
+              <div className="cm-fields">
+                <FieldBox full label="Full name" autoComplete="name" value={addr.fullName} onChange={(e) => set("fullName", e.target.value)} error={errors.fullName} />
+                <FieldBox full label="Street address" autoComplete="street-address" value={addr.street} onChange={(e) => set("street", e.target.value)} error={errors.street} placeholder="House number and street" />
+                <FieldBox label="Town / city" autoComplete="address-level2" value={addr.lga} onChange={(e) => set("lga", e.target.value)} error={errors.lga} />
+                <FieldBox label="Postcode / ZIP" autoComplete="postal-code" value={addr.postcode ?? ""} onChange={(e) => set("postcode", e.target.value)} />
+                <FieldBox label="State / region (optional)" autoComplete="address-level1" value={addr.state} onChange={(e) => set("state", e.target.value)} />
+                <FieldBox label="District / area (optional)" autoComplete="address-level3" value={addr.area} onChange={(e) => set("area", e.target.value)} />
+                <TextAreaBox full label="Delivery note (optional)" rows={2} value={addr.note ?? ""} onChange={(e) => set("note", e.target.value)} placeholder="Apartment, buzzer, best time to call…" />
+              </div>
+              ) : (
               <div className="cm-fields">
                 <FieldBox full label="Full name" autoComplete="name" value={addr.fullName} onChange={(e) => set("fullName", e.target.value)} error={errors.fullName} />
                 <SelectBox label="State" autoComplete="address-level1" value={addr.state} onChange={(e) => set("state", e.target.value)} error={errors.state}>
@@ -383,6 +427,7 @@ export function CheckoutView({ zones, cancelledRef = null }: { zones: DeliveryZo
                 <FieldBox full label="Nearest landmark" value={addr.landmark} onChange={(e) => set("landmark", e.target.value)} error={errors.landmark} placeholder="Opposite the filling station" hint="Helps the rider find you." />
                 <TextAreaBox full label="Delivery note (optional)" rows={2} value={addr.note ?? ""} onChange={(e) => set("note", e.target.value)} placeholder="Gate code, best time to call…" />
               </div>
+              )}
               {status === "authed" && savedId === "new" && (
                 <Check id="save-addr" checked={saveAddress} onChange={setSaveAddress}>Save this address to my account</Check>
               )}

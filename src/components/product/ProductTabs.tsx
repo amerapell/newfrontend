@@ -80,7 +80,7 @@ export function ProductTabs({ product: p, zones }: { product: Product; zones: De
                 ))}
               </ul>
             ) : (
-              <p>Delivered across Nigeria. Fees and timings are shown at checkout.</p>
+              <p>Delivered worldwide — across Nigeria, and abroad by DHL Express. Fees and timings are shown at checkout.</p>
             )}
           </Block>
           <Block title="Exchanges">

@@ -85,6 +85,15 @@ export function toE164NG(input: string): string | null {
   return "+234" + rest;
 }
 
+/** Any phone with its country code → E.164 (+<8–15 digits>); a Nigerian number written locally also works. */
+export function toE164Intl(input: string): string | null {
+  const ng = toE164NG(input);
+  if (ng) return ng;
+  let digits = input.trim().replace(/[\s\-().]/g, "");
+  if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
+  return /^\+[1-9]\d{7,14}$/.test(digits) ? digits : null;
+}
+
 /** +2348030000000 → "803 000 0000" for display in a "+234" prefixed field */
 export function localPhoneDisplay(e164: string | null | undefined) {
   if (!e164) return "";

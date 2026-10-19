@@ -2,6 +2,7 @@ import { ProductImage } from "@/components/product/ProductImage";
 import { ORDER_STATUS_LABEL, longDate, naira } from "@/lib/format";
 import { iconKind } from "@/lib/product";
 import type { Order } from "@/lib/types";
+import { addressLines } from "@/lib/countries";
 
 /** Minimal progress: a row of steps, each with a 1px rule on top (ink once reached), 14px label, 12px soft description. */
 export function Progress({ steps, reached, declined, label = "Progress" }: { steps: { label: string; desc?: string }[]; reached: number; declined?: boolean; label?: string }) {
@@ -81,12 +82,10 @@ export function OrderMeta({ order }: { order: Order }) {
           {a ? (
             <>
               {a.fullName}
-              <br />
-              {a.street}, {a.area}
-              <br />
-              {a.lga}, {a.state}
-              <br />
-              <span className="cm-soft">Near {a.landmark}</span>
+              {addressLines(a).map((l) => (
+                <span key={l}><br />{l}</span>
+              ))}
+              {a.landmark && <><br /><span className="cm-soft">Near {a.landmark}</span></>}
             </>
           ) : (
             order.delivery.name

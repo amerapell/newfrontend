@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await safe(catalogApi.collection(slug, { pageSize: 1 }), null);
   if (!data) return { title: "Shop" };
   const c = data.collection;
-  const description = c.description ?? `${c.name} at Amerapelle — delivered across Nigeria.`;
+  const description = c.description ?? `${c.name} at Amerapelle — delivered worldwide.`;
   return {
     title: c.name,
     description,

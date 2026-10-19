@@ -15,7 +15,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: { absolute: "Amerapelle — A World of Style. A Signature of Luxury." },
-  description: "Amerapelle is a Lagos-based luxury multi-brand fashion house: fashion, statement handbags, footwear and accessories. Delivered across Nigeria.",
+  description: "Amerapelle is a Lagos-based luxury multi-brand fashion house: fashion, statement handbags, footwear and accessories. Delivered worldwide.",
   alternates: { canonical: SITE_URL },
 };
 
