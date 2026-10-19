@@ -236,8 +236,16 @@ export type StoreSettings = {
   serviceImages?: ServiceImages;
   /** First-visit "Welcome to Amerapelle" newsletter pop-up. */
   welcomePopup?: WelcomePopup;
+  /** Home page photo panels: opening image (slow zoom), slideshow, still image. */
+  homeMedia?: HomeMedia;
   drop: DropSettings | null;
 };
+
+/** focus = which part of a wide photo stays in view on a narrow phone screen. */
+export type HomeImageFocus = "left" | "center" | "right";
+export type HomeImage = { url: string; focus: HomeImageFocus };
+export type HomePanel = { images: HomeImage[]; title: string; linkLabel: string; href: string };
+export type HomeMedia = { hero: HomePanel; slides: HomePanel; still: HomePanel };
 
 export type FaqGroup = { group: string; items: { id: string; question: string; answer: string }[] };
 

@@ -22,6 +22,11 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   tickerText: [],
   serviceImages: { stylist: null, store: null, exchange: null },
   welcomePopup: { enabled: false, title: "Welcome to Amerapelle", text: "", imageUrl: null },
+  homeMedia: {
+    hero: { images: [], title: "", linkLabel: "", href: "/" },
+    slides: { images: [], title: "", linkLabel: "", href: "/" },
+    still: { images: [], title: "", linkLabel: "", href: "/" },
+  },
   drop: null,
 };
 

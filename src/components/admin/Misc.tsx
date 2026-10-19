@@ -6,7 +6,7 @@ import { CheckRow, FieldBox, SelectBox, TextAreaBox } from "@/components/ui/Fiel
 import { useToast } from "@/context/ToastContext";
 import { adminApi, backgroundRemovalAvailable, uploadCutout, uploadImage } from "@/lib/api";
 import { EXCHANGE_STATUS_LABEL, apiMessage, longDate, naira, slugify } from "@/lib/format";
-import type { AdminCollection, ContentPage, DeliveryZone, Discount, DiscountType, ExchangeStatus, FaqItemAdmin, StoreSettings } from "@/lib/types";
+import type { AdminCollection, ContentPage, DeliveryZone, Discount, DiscountType, ExchangeStatus, FaqItemAdmin, HomeImageFocus, HomeMedia, HomePanel, StoreSettings } from "@/lib/types";
 import { AdminHead, setAdminTotpFlag, useAdmin, useAsync } from "./AdminShell";
 
 function useMutate() {
@@ -418,6 +418,68 @@ function TotpSetupCard() {
   );
 }
 
+const EMPTY_PANEL: HomePanel = { images: [], title: "", linkLabel: "", href: "/" };
+const HOME_PANELS: { key: keyof HomeMedia; title: string; hint: string; max: number }[] = [
+  { key: "hero", title: "Opening photo", hint: "First thing visitors see, full screen, slowly zooming in and out.", max: 1 },
+  { key: "slides", title: "Slideshow", hint: "Up to 6 photos, changing every 5 seconds. Shown after the introduction.", max: 6 },
+  { key: "still", title: "Still photo", hint: "Shown after New In.", max: 1 },
+];
+
+/** Admin → Settings → Home page: the three full-screen photo panels (wide landscape photos, 16:9 works best). */
+function HomePhotosCard({ media, onChange }: { media: HomeMedia | undefined; onChange: (m: HomeMedia) => void }) {
+  const m: HomeMedia = { hero: media?.hero ?? EMPTY_PANEL, slides: media?.slides ?? EMPTY_PANEL, still: media?.still ?? EMPTY_PANEL };
+  const setPanel = (key: keyof HomeMedia, p: Partial<HomePanel>) => onChange({ ...m, [key]: { ...m[key], ...p } });
+  return (
+    <section className="admin-card">
+      <div className="mono-label admin-card__head">Home page photos</div>
+      <p className="t-small t-grey">Wide photos with real surroundings, at least 1600px wide. &ldquo;On phones, keep&rdquo; picks the side of the photo that stays in view on a narrow screen. A panel with no photo is hidden.</p>
+      {HOME_PANELS.map(({ key, title, hint, max }) => {
+        const panel = m[key];
+        const images = panel.images.length < max ? [...panel.images, null] : panel.images;
+        return (
+          <div key={key} className="home-photos">
+            <h3 className="home-photos__title">{title}</h3>
+            <p className="t-small t-grey">{hint}</p>
+            <div className="field-grid field-grid--200">
+              {images.map((img, i) => (
+                <div key={img?.url ?? `new-${i}`} className="home-photos__item">
+                  <ImageField
+                    label={max > 1 ? `Photo ${i + 1}` : "Photo"}
+                    empty={img ? "" : max > 1 && i > 0 ? "Add another photo" : "No photo — panel hidden"}
+                    value={img?.url ?? null}
+                    onChange={(url) => {
+                      const next = [...panel.images];
+                      if (!url) next.splice(i, 1);
+                      else next[i] = { url, focus: img?.focus ?? "center" };
+                      setPanel(key, { images: next });
+                    }}
+                  />
+                  {img && (
+                    <SelectBox
+                      label="On phones, keep"
+                      value={img.focus}
+                      onChange={(e) => setPanel(key, { images: panel.images.map((x, j) => (j === i ? { ...x, focus: e.target.value as HomeImageFocus } : x)) })}
+                    >
+                      <option value="left">Left side</option>
+                      <option value="center">Centre</option>
+                      <option value="right">Right side</option>
+                    </SelectBox>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="field-grid field-grid--200">
+              <FieldBox label="Title on the photo" maxLength={80} value={panel.title} onChange={(e) => setPanel(key, { title: e.target.value })} />
+              <FieldBox label="Link text" maxLength={60} value={panel.linkLabel} onChange={(e) => setPanel(key, { linkLabel: e.target.value })} />
+              <FieldBox label="Link to · e.g. /c/women" maxLength={200} value={panel.href} onChange={(e) => setPanel(key, { href: e.target.value.trim() })} />
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 export function SettingsAdmin() {
   const { data } = useAsync(() => adminApi.settings(), []);
   const mutate = useMutate();
@@ -458,6 +520,7 @@ export function SettingsAdmin() {
             <FieldBox label="TikTok URL" value={s.tiktokUrl} onChange={(e) => set("tiktokUrl", e.target.value)} />
           </div>
         </section>
+        <HomePhotosCard media={s.homeMedia} onChange={(m) => set("homeMedia", m)} />
         <section className="admin-card">
           <div className="mono-label admin-card__head">Home · &ldquo;Amerapelle at your service&rdquo; photos</div>
           <p className="t-small t-grey">Landscape photos. A card without a photo shows text only.</p>

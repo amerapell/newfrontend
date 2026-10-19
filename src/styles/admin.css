@@ -233,3 +233,8 @@
   .admin-table--cards td:last-child:empty { display: none; }
   .admin-table--cards .btn { width: 100%; }
 }
+
+/* Settings → Home page photos */
+.home-photos { padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--hair); display: grid; gap: 12px; }
+.home-photos__title { font-size: var(--fs-product); }
+.home-photos__item { display: grid; gap: 8px; align-content: start; }

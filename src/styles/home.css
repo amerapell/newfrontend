@@ -90,3 +90,21 @@
   .home-intro .prose h2 { font-size: 22px; }
   .home-intro .prose h3 { font-size: 18px; margin-bottom: 20px; }
 }
+
+/* ---------- Home photo panels: slow zoom (opening image) and slideshow ---------- */
+.hero__frame { position: absolute; inset: 0; display: block; overflow: hidden; }
+.hero__frame .photo { position: absolute; inset: 0; }
+.hero--slides .hero__frame { opacity: 0; transition: opacity 1400ms var(--ease); }
+.hero--slides .hero__frame.is-on { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  /* in place of a video: the photo breathes — in slowly, then back out */
+  .hero--zoom .hero__frame .photo { animation: home-breathe 22s ease-in-out infinite alternate; transform-origin: 60% 50%; }
+  .hero--slides .hero__frame .photo { transform: scale(1.06); transition: transform 7000ms linear; }
+  .hero--slides .hero__frame.is-on .photo { transform: scale(1); }
+}
+@keyframes home-breathe { from { transform: scale(1); } to { transform: scale(1.14); } }
+.hero__dots { position: absolute; z-index: 2; right: var(--gutter); bottom: 56px; display: flex; gap: 8px; }
+.hero__dot { width: 28px; height: 20px; padding: 0; border: 0; background: none; cursor: pointer; position: relative; }
+.hero__dot::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(255, 255, 255, .45); transition: background var(--dur) var(--ease); }
+.hero__dot.is-on::after { background: var(--white); height: 2px; }
+@media (max-width: 1023px) { .hero__dots { right: var(--gutter-m); bottom: 36px; } }
