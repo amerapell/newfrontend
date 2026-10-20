@@ -95,6 +95,7 @@ export function Footer() {
           <h2>Amerapelle</h2>
           <ul>
             <li><Link href="/about">About</Link></li>
+            <li><Link href="/founder">Our Founder</Link></li>
             <li><Link href="/faq">FAQ</Link></li>
           </ul>
         </div>

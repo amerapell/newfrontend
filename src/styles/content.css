@@ -68,3 +68,33 @@
 .links__list a::after { content: ""; width: 6px; height: 10px; flex: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10' fill='none' stroke='%23000' stroke-width='1'%3E%3Cpath d='M1 1l4 4-4 4'/%3E%3C/svg%3E") no-repeat center; }
 .links__list a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .links__foot { margin-top: auto; padding-top: 40px; text-align: center; }
+
+/* Founder page — photo beside the story on desktop, stacked on phones. */
+.founder { max-width: 1120px; margin: 0 auto; padding: 80px var(--gutter) 140px; }
+.founder__head { text-align: center; margin-bottom: 56px; display: flex; flex-direction: column; gap: 10px; }
+.founder__eyebrow, .founder__h2 { font-size: var(--fs-small); letter-spacing: .2em; text-transform: uppercase; color: var(--grey); }
+.founder__name { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.1; letter-spacing: .06em; text-transform: uppercase; }
+.founder__role { font-style: italic; font-size: var(--fs-title); line-height: var(--lh); }
+.founder__body { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 12fr); gap: 72px; align-items: start; }
+.founder__photo { margin: 0; position: sticky; top: 120px; background: var(--stage); }
+.founder__photo img { display: block; width: 100%; height: auto; }
+.founder__story { display: flex; flex-direction: column; gap: 16px; line-height: 1.7; max-width: 560px; }
+.founder__lede { font-size: var(--fs-title); line-height: 1.45; font-style: italic; margin-bottom: 8px; }
+.founder__section { margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 16px; }
+.founder__h2 { color: var(--ink); }
+.founder__formula { font-size: var(--fs-title); letter-spacing: .08em; line-height: 1.5; padding: 20px 0; }
+.founder__op { color: #c32a2e; margin: 0 .35em; }
+.founder__close { margin-top: 96px; padding-top: 64px; border-top: 1px solid var(--hair); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.founder__brand { font-size: var(--fs-display); letter-spacing: .3em; }
+.founder__motto { font-style: italic; color: #c32a2e; font-size: var(--fs-title); line-height: var(--lh); margin-bottom: 16px; }
+@media (max-width: 1023px) {
+  .founder__body { gap: 48px; }
+}
+@media (max-width: 767px) {
+  .founder { padding: 48px var(--gutter-m) 96px; }
+  .founder__head { margin-bottom: 36px; }
+  .founder__body { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .founder__photo { position: static; }
+  .founder__formula { font-size: var(--fs-product); letter-spacing: .04em; }
+  .founder__close { margin-top: 64px; padding-top: 48px; }
+}
