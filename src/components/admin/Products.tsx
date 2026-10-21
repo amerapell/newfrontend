@@ -267,6 +267,24 @@ export function ProductEditor({ id }: { id?: string }) {
                 Archive
               </button>
             )}
+            {id && existing.data && form.status !== "LIVE" && (
+              <button
+                className="btn btn--ghost btn--danger"
+                onClick={async () => {
+                  if (!confirm(`Delete "${form.name || "this product"}" for good? This can't be undone. Past orders keep their details.`)) return;
+                  try {
+                    await adminApi.deleteProduct(id);
+                    toast.show({ message: "Product deleted." });
+                    router.replace("/admin/products");
+                  } catch (e) {
+                    onError(e);
+                    toast.show({ message: apiMessage(e), tone: "error" });
+                  }
+                }}
+              >
+                Delete
+              </button>
+            )}
             <button className="btn btn--short" onClick={save} disabled={busy}>{busy ? "Saving…" : id ? "Save changes" : "Create product"}</button>
           </>
         }

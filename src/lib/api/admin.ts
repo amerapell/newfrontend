@@ -42,6 +42,8 @@ export const adminApi = {
   createProduct: (b: AdminProductInput) => api.post<AdminProduct>("admin/products", b, a),
   updateProduct: (id: string, b: Partial<AdminProductInput>) => api.patch<AdminProduct>(`admin/products/${id}`, b, a),
   archiveProduct: (id: string) => api.del<unknown>(`admin/products/${id}`, a),
+  /** Permanent — only drafts and archived products. */
+  deleteProduct: (id: string) => api.del<unknown>(`admin/products/${id}/permanent`, a),
   updateVariant: (id: string, b: { priceKobo?: number; compareAtKobo?: number | null; stock?: number; sku?: string }) => api.patch<Variant>(`admin/variants/${id}`, b, a),
   exportStock: () => api.get<string>("admin/stock/export", { ...a, text: true }),
   importStock: (file: File) => {

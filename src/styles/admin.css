@@ -244,3 +244,6 @@
 .img-grid__scale input { width: 100%; accent-color: var(--ink); }
 .order-tracking { display: grid; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hair); }
 .order-tracking .admin-input { flex: 1 1 220px; min-width: 0; }
+
+/* Destructive action (permanent product delete) */
+.admin .btn--danger { color: #b3261e; border-color: currentColor; }
