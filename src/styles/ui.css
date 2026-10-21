@@ -198,7 +198,8 @@
 .welcome__err { color: var(--red, #b3261e); }
 /* Packshot sitting on the stage (image scale < 100): smaller, centred, and its white ground multiplied into the stage
    colour so it reads as one surface (Berluti-style). Worn shots (scale 100) still fill the frame edge to edge. */
-.img-fill--inset { background: transparent; }
+/* Solid stage ground (not transparent): a hover/second image must fully cover the one beneath it. */
+.img-fill--inset { background: var(--stage); }
 .img-fill__inner { position: absolute; display: block; }
 .img-fill--inset img { mix-blend-mode: multiply; }
 /* multiply needs the stage colour behind it inside the same stacking context (sticky stage, fading slides) */
