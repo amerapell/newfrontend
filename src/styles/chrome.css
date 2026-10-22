@@ -113,6 +113,9 @@
 .footer__col ul { display: flex; flex-direction: column; gap: 8px; }
 .footer__col li a { color: rgba(255, 255, 255, .8); }
 .footer__legal { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 64px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, .2); font-size: var(--fs-small); }
+/* Studio credit: pushed to the far right of the legal line, a little quieter than the links. */
+.footer__credit { margin-left: auto; opacity: .7; }
+.footer__credit:hover { opacity: 1; }
 @media (max-width: 1023px) {
   .footer__top { grid-template-columns: 1fr; gap: 40px; }
   .footer__cols { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 64px; gap: 40px 24px; }

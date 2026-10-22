@@ -105,6 +105,7 @@ export function Footer() {
         <span>© {year} Amerapelle, Lagos</span>
         <Link href="/policies/privacy">Privacy</Link>
         <Link href="/policies/terms">Terms</Link>
+        <a href="https://www.instagram.com/studiomvp_/" target="_blank" rel="noopener noreferrer" className="footer__credit">Built by StudioMVP</a>
       </div>
     </footer>
   );
